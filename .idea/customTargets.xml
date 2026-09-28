@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CLionExternalBuildManager">
+    <target id="37058a71-9a46-4b8e-9b74-c115ac493a30" name="Build debug" defaultType="TOOL">
+      <configuration id="09faa0db-9876-48d2-8309-ed8c9f5e0a98" name="Build debug">
+        <build type="TOOL">
+          <tool actionId="Tool_External Tools_PyBuildDebug" />
+        </build>
+      </configuration>
+    </target>
+    <target id="6a5a7da0-55d2-421c-b799-b62b4d03bbd8" name="Build Release" defaultType="TOOL">
+      <configuration id="98ccebee-aca9-4e0e-81dc-a34293a16487" name="Build Release">
+        <build type="TOOL">
+          <tool actionId="Tool_External Tools_PyBuildRelease" />
+        </build>
+      </configuration>
+    </target>
+  </component>
+</project>

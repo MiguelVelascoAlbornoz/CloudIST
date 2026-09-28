@@ -1,0 +1,16 @@
+<toolSet name="External Tools">
+  <tool name="PyBuildDebug" showInMainMenu="false" showInEditor="false" showInProject="false" showInSearchPopup="false" disabled="false" useConsole="true" showConsoleOnStdOut="false" showConsoleOnStdErr="false" synchronizeAfterRun="true">
+    <exec>
+      <option name="COMMAND" value="\\wsl.localhost\Ubuntu\usr\bin\python3" />
+      <option name="PARAMETERS" value="launch.py debug" />
+      <option name="WORKING_DIRECTORY" value="//wsl.localhost/Ubuntu/home/migue/SO/CloudIST" />
+    </exec>
+  </tool>
+  <tool name="PyBuildRelease" showInMainMenu="false" showInEditor="false" showInProject="false" showInSearchPopup="false" disabled="false" useConsole="true" showConsoleOnStdOut="false" showConsoleOnStdErr="false" synchronizeAfterRun="true">
+    <exec>
+      <option name="COMMAND" value="\\wsl.localhost\Ubuntu\usr\bin\python3" />
+      <option name="PARAMETERS" value="launch.py release" />
+      <option name="WORKING_DIRECTORY" value="//wsl.localhost/Ubuntu/home/migue/SO/CloudIST" />
+    </exec>
+  </tool>
+</toolSet>

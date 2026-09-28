@@ -1,0 +1,11 @@
+# Object files
+*.o
+
+# Input/output files
+*.in
+build/*
+build\*
+*.out
+
+# Executable 
+cloudIST
