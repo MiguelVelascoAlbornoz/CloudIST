@@ -148,5 +148,30 @@
       "build/compilationFiles/debug/main.o"
     ],
     "file": "src/main.c"
+  },
+  {
+    "directory": "/home/migue/SO/CloudIST",
+    "arguments": [
+      "gcc",
+      "-g",
+      "-O0",
+      "-D_DEBUG",
+      "-DPROJECT_NAME=\"CloudIST\"",
+      "-MMD",
+      "-MP",
+      "-DPROJECT_VERSION=\"0.0.0\"",
+      "-DENGINE_VERSION=\"0.0.0\"",
+      "-fdiagnostics-color=never",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-Wno-unused-result",
+      "-Iexternal/includes",
+      "-c",
+      "src/utils/vector.c",
+      "-o",
+      "build/compilationFiles/debug/vector.o"
+    ],
+    "file": "src/utils/vector.c"
   }
 ]
