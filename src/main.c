@@ -11,7 +11,10 @@
 	#define RAM 1
 	#define DISK 1
 	#define CPU 1.0
+	#define INPUT_DIR "config"
 #endif
+
+#define DESIRED_ARGS 6
 int main(int argc, char **argv){
 	DataCenter dc;
 	datacenter_init(&dc);
@@ -22,10 +25,10 @@ int main(int argc, char **argv){
 	size_t ram;
 	size_t disk;
 	double cpu;
-
+	const char* inputDir;
 	#ifndef _DEBUG //O executavel debug nao pede argumentos para ser mais facil o debug entao este codigo nao acontece se for debug mode
-	if (argc != 5) {
-		fprintf(stderr, "Usage: %s <servers> <ram> <disk> <cpus>\n", argv[0]);
+	if (argc != DESIRED_ARGS) {
+		fprintf(stderr, "Usage: %s <servers> <ram> <disk> <cpus> <input dir>\n", argv[0]);
 		return 1;
 	}
 	if (parse_size_t_arg(argv[1], &servers) != 0 ||
@@ -35,19 +38,22 @@ int main(int argc, char **argv){
 		fprintf(stderr, "Invalid command line arguments.\n");
 		return 1;
 	}
+	inputDir = argv[5];
 	#else//Codigo que acontece em debug mode
 	printf("Argumento[0]: %d\nArgv: %s\n",argc,*argv); //Para que não haja warning de variaveis nao utilizadas
 		servers = SERVERS;
 		ram = RAM;
 		disk = DISK;disk = DISK;
 		cpu = CPU;
+		inputDir = INPUT_DIR;
 	#endif
 
 
 	Resources resources = {
     .ram = ram,
     .disk = disk,
-    .cpu = cpu
+    .cpu = cpu,
+	.inputDir = inputDir,
 	};
 
 	if(datacenter_configure(&dc, servers, &resources) != 0){

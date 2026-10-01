@@ -32,7 +32,7 @@ int datacenter_configure(DataCenter *dc, size_t num_servers, Resources *resource
     return 1;
   }
 
-  if (num_servers == 0 || resources->ram == 0 || resources->disk == 0 || resources->cpu <= 0.0) {
+  if (num_servers == 0 || resources->ram == 0 || resources->disk == 0 || resources->cpu <= 0.0 || !path_exists(resources->inputDir)) {
     fprintf(stderr, "Invalid configuration values.\n");
     return 1;
   }
