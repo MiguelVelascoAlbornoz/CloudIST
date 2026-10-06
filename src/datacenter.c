@@ -53,12 +53,38 @@ int datacenter_configure(DataCenter *dc, size_t num_servers, Resources *resource
     fprintf(stderr, "datacenter_configure: Failed opening input directory.\n");
     return 1;
   }
-  struct dirent* entry = readdir(configDir);
+ 
 
   //Obter os ficheiros .conf e aramazena-los em um vector por ordem aflabetica
   //  - Clasificar se termina em .conf
   //  - meter num vector esse string caso termine em .conf
   //  - Ordenar alfabeticamente esse vetor com strings
+    Vector configFiles;
+    if(!initVector(&configFiles, sizeof(char *))){
+      fprintf(stderr, "Falhou inicializaçao do vector\n");
+      closedir(configDir);
+      return 1;
+    }
+    struct dirent* entry; 
+    errno = 0; // limpar erros
+
+    int ends_with_conf(const char *filename){
+      size_t len = strlen(filename);
+      if(len < 5) return 0;
+      return strcmp(filename + len - 5,".conf") == 0; 
+      }
+     
+
+    while((entry = readdir(configDir)) != NULL){  //bamos ler ficheiro a ficheiro
+
+
+    }
+
+
+
+
+
+
 
   while (entry) {
     printf("%s\n",entry->d_name);
