@@ -35,4 +35,15 @@ int file_exists(const char *path);
  */
 int absolute_path(const char *path, char *buffer, size_t size);
 
+//@r
+//Tem de se garantir que a diretoria src já exista
+//Cria a diretoria dst caso não exista
+/**
+ *
+ * @param src Path aonde se vao copiar os ficheiros, tem de se garantir a sua existencia antes da chamada
+ * @param dst Path de destino, caso nao exista sera criado
+ * @return
+ * Retorna 1 se corrreu todo bem 0 caso contrario
+ */
+int copiaRecursiva(const char* src, const char* dst);
 #endif // FILESYSTEM__H
