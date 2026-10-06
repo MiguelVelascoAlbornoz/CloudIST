@@ -59,6 +59,7 @@ int datacenter_configure(DataCenter *dc, size_t num_servers, Resources *resource
   //  - Clasificar se termina em .conf
   //  - meter num vector esse string caso termine em .conf
   //  - Ordenar alfabeticamente esse vetor com strings
+
   while (entry) {
     printf("%s\n",entry->d_name);
     entry = readdir(configDir);
@@ -71,11 +72,14 @@ int datacenter_configure(DataCenter *dc, size_t num_servers, Resources *resource
     fprintf(stderr, "datacenter_configure: Falid closing input directory\n");
     return 1;
   }
-  //Copiar recursivamente por cada reserva os ficheiros na diretoria de entrada de cada tipo de VM para /tmp/CloudIST/<ID-reserva>/<ID-VM>
-
 
   //Fazer open um a um de cada valor do vetor de strings
   //  - Chamar a execuçao de cada linha do ficheiro como se fosse um comando
+
+  //Copiar recursivamente por cada reserva os ficheiros na diretoria de entrada de cada tipo de VM para /tmp/CloudIST/<ID-reserva>/<ID-VM>
+
+
+
 
 
   //Only if everything is alright
