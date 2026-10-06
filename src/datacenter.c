@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <sys/stat.h>
 
 
 void datacenter_init(DataCenter *dc) {
@@ -101,8 +102,39 @@ int datacenter_configure(DataCenter *dc, size_t num_servers, Resources *resource
 
   //Fazer open um a um de cada valor do vetor de strings
   //  - Chamar a execuçao de cada linha do ficheiro como se fosse um comando
+  //Espaço suficiente para conter o id da reserva, o id da vm, o \0 e 15 para o /tmp/CloudIST/<etc>/ dando no total +16
+  char path[MAX_STRING_SIZE+MAX_VM_ID_STRING +16] = "/tmp/CloudIST/";
+  int actualIndexInPath = 14;
+  //Iterar por cada reservação
+  for (size_t i = 0; i < dc->num_reservations; i++)
+  {
+    //Iterar por cada VM de essa resserva
+    Reservation res = dc->reservations[i];
+    //Meter apartor do path[14] com o path[14] incluido o res.id
+    size_t redIDLength = strlen(res.id);
+    memcpy(path+actualIndexInPath,res.id,redIDLength);
+    actualIndexInPath += redIDLength;
+    path[actualIndexInPath] = '/';
+    actualIndexInPath++;
+    for (size_t j = 0; j < res.num_vms; j++)
+    {
+      VM* type = res.vms[j];
+      size_t typeIDLength = strlen(type->id);
+      memcpy(path+actualIndexInPath,type->id,typeIDLength+1);
 
+
+
+      int dirCreationStatus = mkdir(path,0);
+      if (dirCreationStatus == 0 || dirCreationStatus == EEXIST)
+      {
+        fprintf(stderr, "Error creatring directory for VM \"%s\" in resserve \"%s\"\n",type->id,res.id);
+        continue;
+      }
+    }
+  }
   //Copiar recursivamente por cada reserva os ficheiros na diretoria de entrada de cada tipo de VM para /tmp/CloudIST/<ID-reserva>/<ID-VM>
+
+
 
 
 
