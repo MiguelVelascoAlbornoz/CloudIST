@@ -9,6 +9,34 @@
 #include <errno.h>
 #include <sys/stat.h>
 
+int datacenter_initializeReservationDirectories(const DataCenter* dc) {
+  //Maximo tamanho que pode chegar a ter o path em que sera colada a copia recursiva
+  char path[MAX_STRING_SIZE+MAX_VM_ID_STRING +16] = "/tmp/CloudIST/";
+  //Iterar por cada reservação
+  for (size_t i = 0; i < dc->num_reservations; i++)
+  {
+
+    //Iterar por cada VM de essa resserva //DUVIDA -> Sera que em cada reserva apenas existe um tipo de VM?
+    Reservation res = dc->reservations[i];
+    for (size_t j = 0; j < res.num_vms; j++)
+    {
+      VM* vmInReservation = res.vms[j]; //De cada VM de essa reserva obtem-se o type
+      int n = snprintf(path, sizeof(path), "/tmp/CloudIST/%s/%s",
+                         res.id, vmInReservation->id);
+      if (n < 0 || (size_t)n >= sizeof(path)) {
+        // path truncado: manejar error
+        fprintf(stderr, "Path demasiado largo\n");
+        return 0;
+      }
+
+
+      //Pode -se fazer agora  acopia recursiva
+      if (!copiaRecursiva(vmInReservation->type->input_folder,path)) {
+        return 0;
+      }
+    }
+  }
+}
 
 void datacenter_init(DataCenter *dc) {
   dc->servers = NULL;
@@ -97,34 +125,12 @@ int datacenter_configure(DataCenter *dc, size_t num_servers, Resources *resource
   //  - Chamar a execuçao de cada linha do ficheiro como se fosse um comando
   //Espaço suficiente para conter o id da reserva, o id da vm, o \0 e 15 para o /tmp/CloudIST/<etc>/ dando no total +16
 
-  char path[MAX_STRING_SIZE+MAX_VM_ID_STRING +16] = "/tmp/CloudIST/";
-  int actualIndexInPath = 14;
-  //Iterar por cada reservação
-  for (size_t i = 0; i < dc->num_reservations; i++)
-  {
+  //Apenas existe uma reserva R por cada ficheiro .conf
 
-    //Iterar por cada VM de essa resserva
-    Reservation res = dc->reservations[i];
-    //Meter apartor do path[14] com o path[14] incluido o res.id
-    size_t redIDLength = strlen(res.id);
-    memcpy(path+actualIndexInPath,res.id,redIDLength);
-    actualIndexInPath += redIDLength;
-    path[actualIndexInPath] = '/';
-    actualIndexInPath++;
-    for (size_t j = 0; j < res.num_vms; j++)
-    {
-      VM* type = res.vms[j];
-      size_t typeIDLength = strlen(type->id);
-      memcpy(path+actualIndexInPath,type->id,typeIDLength+1);
-      //Path ja esta obtido
-      //VMType ja garante que input_folder existe
 
-      //Pode -se fazer agora  acopia recursiva
-      copiaRecursiva(type->type->input_folder,path);
-    }
+  if (!datacenter_initializeReservationDirectories(dc)) {
+    fprintf(stderr,"Erro tentando fazer as copias recursivas.");
   }
-  //Copiar recursivamente por cada reserva os ficheiros na diretoria de entrada de cada tipo de VM para /tmp/CloudIST/<ID-reserva>/<ID-VM>
-
 
   //Only if everything is alright
   for (size_t i = 0; i < num_servers; i++) {

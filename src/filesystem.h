@@ -4,6 +4,13 @@
 #include <stddef.h>
 
 /**
+ * Um ficheiro sera copiado em chunks de esta quantidade de bytes.
+ * Isto por que copiar byte por byte de um ficheiro a outro é demasiado lento mas tambem levar todos byte sde um ficheiro á ram ao mesmo tmepo pode ser uma má ideia se o ficheiro for demasiado pesado.
+ * Caso a função falhar o ressultado quanto a existencia do ficheiro de destino e se foi copiado cada byte de forma exata é impredecivel
+ */
+#define FILE_COPY_CHUNK_SIZE 65536
+
+/**
  * Checks whether a path exists and is a directory.
  *
  * @param path Directory path.
@@ -36,14 +43,27 @@ int file_exists(const char *path);
 int absolute_path(const char *path, char *buffer, size_t size);
 
 //@r
-//Tem de se garantir que a diretoria src já exista
-//Cria a diretoria dst caso não exista
+
 /**
- *
+ * @details
+ * Tem de se garantir que a diretoria src já exista.
+ * Cria a diretoria dst caso não exista.
+ * Caso a copia recursiva tenha falhado em alguma etapa o diretorio de destino pode ficar medio construido pelo que o resultado sera impredecivel
  * @param src Path aonde se vao copiar os ficheiros, tem de se garantir a sua existencia antes da chamada
  * @param dst Path de destino, caso nao exista sera criado
  * @return
- * Retorna 1 se corrreu todo bem 0 caso contrario
+ *  1 se a copia recursiva foi bem sucedida para todos os ficheiros
+ *  0 se não foi bem sucedida
  */
 int copiaRecursiva(const char* src, const char* dst);
+
+/**
+ * @details O usuario deve garantir a existencia de srcFile e que a diretoria que ira conter dstFile exista
+ * @param srcFile path do ficheiro a ser copiado
+ * @param dstFile diretoria em que devera ser colocado a copia do ficheiro (já deve contem o propio nome do ficheiro)
+ * @return
+ *  1 caso a copia tenha sido bem sucedida
+ *  0 caso contrario
+ */
+int copiaFicheiro(const char* srcFile, const char* dstFile);
 #endif // FILESYSTEM__H

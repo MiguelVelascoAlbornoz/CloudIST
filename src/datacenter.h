@@ -153,4 +153,14 @@ int datacenter_execute(DataCenter *dc, const char *reservation_id);
  */
 void datacenter_wait(unsigned int delay_ms);
 
+//Esta função ira copiar recursivamente para cada reservação e cada VM da sua respetiva reservação os ficheiros da diretoria de entrada do propio VMType a uma diretoria tal que
+// -> /tmp/CloudIST/<ID-reserva>/<ID-VM>
+/**
+ * @details Esta função nao altera nada do datacenter apenas le as reservas para realizar a copia recursiva
+ * @param dc Pointer to a data center
+ * @return
+ * 0 se aconteceu algum problema
+ * 1 se aconteceu todo certo
+ */
+int datacenter_initializeReservationDirectories(const DataCenter* dc);
 #endif // DATACENTER__H
