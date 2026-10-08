@@ -66,4 +66,18 @@ int copiaRecursiva(const char* src, const char* dst);
  *  0 caso contrario
  */
 int copiaFicheiro(const char* srcFile, const char* dstFile);
+
+typedef int (*EntryCallback)(const char *entry, void *ctx);
+
+
+/* *
+ * Deve ser garantida a existencia de path
+ * skipa . e ..
+ * @param func: função do tipo int <func>(const char *entry, void *context) que sera executada por cada diretorio ou pasta dentro do path dando e que recebera como entry o nome desse diretorio/ficheiro e o context dado pelo usuario.
+ * @return
+ *  - 1 se todo a função acabou bem
+ *  - 0 caso contrario
+ *  - Esta função tambem falha se a chamada a func falha
+ */
+int executePerEachEntry(const char* path, EntryCallback func, void* context);
 #endif // FILESYSTEM__H

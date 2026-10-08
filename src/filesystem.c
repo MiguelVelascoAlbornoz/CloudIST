@@ -101,6 +101,36 @@ int copiaFicheiro(const char* srcFile, const char* dstFile) {
     }
   return ok;
 }
+typedef struct {
+  const char *src;
+  const char *dst;
+} CopyContext;
+int copyEntryCallback(const char* entryName, void* context) {
+  char srcPath[PATH_MAX+1]; //Path completo do ficheiro src atualmente a ser iterado
+  char dstPath[PATH_MAX+1]; //Path completo do ficheiro dst que deveria existir por este ficheiro src
+  CopyContext *copyContext = context;
+  const char *src = copyContext->src;
+  const char *dst = copyContext->dst;
+  //Criam-se esses tais paths
+  if (snprintf(srcPath, sizeof(srcPath), "%s/%s", src, entryName) >= (int)sizeof(srcPath) ||
+      snprintf(dstPath, sizeof(dstPath), "%s/%s", dst, entryName) >= (int)sizeof(dstPath)) {
+    fprintf(stderr, "Path too long in %s\n", src);
+    return 0;
+  }
+  //Verificar se o path atual a ser iterado é uma pasta ou um ficheiro
+  if (path_exists(srcPath)) {
+    //Se for uma pasta chama novamente a copia recursiva para esse diretorio
+    if (!copiaRecursiva(srcPath, dstPath)) {
+      return 0;
+    }
+  } else if (file_exists(srcPath)) {
+    //Se for um file é precisso copiar o ficheiro e mete-lo no dst e continuar para o proximo name que dirent fornecera
+    if (!copiaFicheiro(srcPath, dstPath)) {
+      return 0;
+    }
+  }
+  return 1;
+}
 int copiaRecursiva(const char* src, const char* dst) {
   //Certificar que dst existe, senão cria-lo
   if (mkdir(dst,  0777) != 0 && errno != EEXIST) {
@@ -108,9 +138,13 @@ int copiaRecursiva(const char* src, const char* dst) {
     return 0;
   }
   //Procurar agora em cada diretorio
-  DIR* direntDIR = opendir(src);
+  CopyContext ctx = { src, dst };
+  return executePerEachEntry(src, copyEntryCallback, &ctx);
+}
+
+int executePerEachEntry(const char* path, EntryCallback func, void* context) {
+  DIR* direntDIR = opendir(path);
   if (!direntDIR) {
-    fprintf(stderr, "datacenter_configure: Failed opening input directory.\n");
     return 0;
   }
   struct dirent* dir;
@@ -121,46 +155,23 @@ int copiaRecursiva(const char* src, const char* dst) {
     dir = readdir(direntDIR);
     if (!dir) {
       if (errno != 0) {
-        fprintf(stderr, "Error reading directory %s: %s\n", src, strerror(errno));
         ok = 0;
       }
       break;
     }
     if (strcmp(dir->d_name, ".") == 0 || strcmp(dir->d_name, "..") == 0) //Skip  a coisos que aparecem de forma default
       continue;
-    char srcPath[PATH_MAX]; //Path completo do ficheiro src atualmente a ser iterado
-    char dstPath[PATH_MAX]; //Path completo do ficheiro dst que deveria existir por este ficheiro src
-    //Criam-se esses tais paths
-    if (snprintf(srcPath, sizeof(srcPath), "%s/%s", src, dir->d_name) >= (int)sizeof(srcPath) ||
-        snprintf(dstPath, sizeof(dstPath), "%s/%s", dst, dir->d_name) >= (int)sizeof(dstPath)) {
-      fprintf(stderr, "Path too long in %s\n", src);
+    if (!func(dir->d_name, context)) {
       ok = 0;
       break;
-        }
-    //Verificar se o path atual a ser iterado é uma pasta ou um ficheiro
-    if (path_exists(srcPath)) {
-      //Se for uma pasta chama novamente a copia recursiva para esse diretorio
-      if (!copiaRecursiva(srcPath, dstPath)) {
-        ok = 0;
-        break;
-      }
-    } else if (file_exists(srcPath)) {
-      //Se for um file é precisso copiar o ficheiro e mete-lo no dst e continuar para o proximo name que dirent fornecera
-      if (!copiaFicheiro(srcPath, dstPath)) {
-        ok = 0;
-        break;
-      }
     }
   }
-  errno = 0;
+
+
   closedir(direntDIR);
-  if (errno != 0) {
-    fprintf(stderr,"Error closing directory: %s\n",src);
+  if (errno != 0 || !ok) {
     return 0;
   }
-  return ok;
-}
 
-int executePerEachEntry(const char* path, void* func) {
-
+  return 1;
 }

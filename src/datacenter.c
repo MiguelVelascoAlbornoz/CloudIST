@@ -80,7 +80,7 @@ int datacenter_configure(DataCenter *dc, size_t num_servers, Resources *resource
 
 
   Vector configFiles;//Deve conter os nomes dos ficheiros .config no diretorio especificado
-  if(!initVector(&configFiles, sizeof(char)*PATH_MAX)){
+  if(!initVector(&configFiles, sizeof(char)*(NAME_MAX+1))){
     fprintf(stderr, "Falhou inicializaçao do vector\n");
     return 1;
   }
@@ -105,7 +105,7 @@ int datacenter_configure(DataCenter *dc, size_t num_servers, Resources *resource
     }
     if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) //Skip  a coisos que aparecem de forma default
       continue;
-    char configFilePath[PATH_MAX]; //Path completo do config file
+    char configFilePath[NAME_MAX+1]; //Path completo do config file
 
     if (snprintf(configFilePath, sizeof(configFilePath), "%s/%s", resources->inputDir, entry->d_name) >= (int)sizeof(configFilePath)) {
       fprintf(stderr, "Path too long in %s\n", resources->inputDir);
