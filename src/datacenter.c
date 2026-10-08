@@ -59,6 +59,25 @@ void datacenter_destroy(DataCenter *dc) {
   }
   free(dc->servers);
 }
+typedef struct {
+  const char *inputDir;
+  Vector* configFiles;
+} InsertVectorContext;
+int insertEntryInVectorCallback(const char* entryName, void* context) {
+  char configFilePath[NAME_MAX+1]; //Path completo do config file
+  InsertVectorContext* insertContext = context;
+  if (snprintf(configFilePath, sizeof(configFilePath), "%s/%s",insertContext->inputDir, entryName) >= (int)sizeof(configFilePath)) {
+    fprintf(stderr, "Path too long in %s\n", insertContext->inputDir);
+    return 0;
+  }
+  if (file_exists(configFilePath) && ends_with_conf(configFilePath)) { //Certificar que é um ficheiro e que termina em .conf
+    if (!push_back(insertContext->configFiles,(void*)configFilePath)) {
+      fprintf(stderr, "Error creating config files vector in file: %s\n", entryName);
+      return 0;
+    }
+  }
+  return 1;
+}
 
 int datacenter_configure(DataCenter *dc, size_t num_servers, Resources *resources){
   if(dc->configured){
@@ -78,53 +97,15 @@ int datacenter_configure(DataCenter *dc, size_t num_servers, Resources *resource
     return 1;
   }
 
-
   Vector configFiles;//Deve conter os nomes dos ficheiros .config no diretorio especificado
   if(!initVector(&configFiles, sizeof(char)*(NAME_MAX+1))){
     fprintf(stderr, "Falhou inicializaçao do vector\n");
     return 1;
   }
   //Search files in config directory
-  DIR* configDir = opendir(resources->inputDir);
-  if (!configDir) {
-    fprintf(stderr, "datacenter_configure: Failed opening input directory.\n");
-    destroyVector(&configFiles);
-    return 1;
-  }
-  struct dirent* entry;
-  int ok = 1;
-  while (1) {
-    errno = 0;
-    entry = readdir(configDir);
-    if (!entry) {
-      if (errno != 0) {
-        fprintf(stderr, "Error reading directory %s: %s\n", resources->inputDir, strerror(errno));
-        ok = 0;
-      }
-      break;
-    }
-    if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) //Skip  a coisos que aparecem de forma default
-      continue;
-    char configFilePath[NAME_MAX+1]; //Path completo do config file
+  InsertVectorContext insertContext = {.configFiles = &configFiles, .inputDir = resources->inputDir};
+  executePerEachEntry(resources->inputDir,insertEntryInVectorCallback,&insertContext);
 
-    if (snprintf(configFilePath, sizeof(configFilePath), "%s/%s", resources->inputDir, entry->d_name) >= (int)sizeof(configFilePath)) {
-      fprintf(stderr, "Path too long in %s\n", resources->inputDir);
-      ok = 0;
-      break;
-    }
-    if (file_exists(configFilePath) && ends_with_conf(configFilePath)) { //Certificar que é um ficheiro e que termina em .conf
-      push_back(&configFiles,(void*)configFilePath);
-    }
-  }
-  errno = 0;
-  closedir(configDir);
-  if (errno != 0) {
-    fprintf(stderr,"Error closing directory: %s\n",resources->inputDir);
-    return 0;
-  }
-  if (!ok) {
-    return 0;
-  }
   #ifdef _DEBUG
   //Imprimir o vetor de ficheiros .conf apenas para saber se esta todo bem
   printf("Ficheiros .conf detetados em \"%s\":\n",resources->inputDir);
