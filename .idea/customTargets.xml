@@ -11,7 +11,7 @@
     <target id="6a5a7da0-55d2-421c-b799-b62b4d03bbd8" name="Build Release" defaultType="TOOL">
       <configuration id="98ccebee-aca9-4e0e-81dc-a34293a16487" name="Build Release" toolchainName="WSL">
         <build type="TOOL">
-          <tool actionId="Tool_External Tools_PyBuildRelease" />
+          <tool actionId="Tool_External Tools_PyBuildDebug" />
         </build>
       </configuration>
     </target>

@@ -1,5 +1,7 @@
 #include "datacenter.h"
 #include "datacenter_utils.h"
+#include "utils/vector.h"
+
 
 #include <dirent.h>
 #include <stdio.h>
@@ -13,9 +15,7 @@ int datacenter_initializeReservationDirectories(const DataCenter* dc) {
   //Maximo tamanho que pode chegar a ter o path em que sera colada a copia recursiva
   char path[MAX_STRING_SIZE+MAX_VM_ID_STRING +16] = "/tmp/CloudIST/";
   //Iterar por cada reservação
-  for (size_t i = 0; i < dc->num_reservations; i++)
-  {
-
+  for (size_t i = 0; i < dc->num_reservations; i++) {
     //Iterar por cada VM de essa resserva //DUVIDA -> Sera que em cada reserva apenas existe um tipo de VM?
     Reservation res = dc->reservations[i];
     for (size_t j = 0; j < res.num_vms; j++)
@@ -36,7 +36,9 @@ int datacenter_initializeReservationDirectories(const DataCenter* dc) {
       }
     }
   }
+  return 1;
 }
+
 
 void datacenter_init(DataCenter *dc) {
   dc->servers = NULL;
@@ -76,60 +78,75 @@ int datacenter_configure(DataCenter *dc, size_t num_servers, Resources *resource
     return 1;
   }
 
+
+  Vector configFiles;//Deve conter os nomes dos ficheiros .config no diretorio especificado
+  if(!initVector(&configFiles, sizeof(char)*PATH_MAX)){
+    fprintf(stderr, "Falhou inicializaçao do vector\n");
+    return 1;
+  }
   //Search files in config directory
   DIR* configDir = opendir(resources->inputDir);
   if (!configDir) {
     fprintf(stderr, "datacenter_configure: Failed opening input directory.\n");
+    destroyVector(&configFiles);
     return 1;
   }
- 
-
-  //Obter os ficheiros .conf e aramazena-los em um vector por ordem aflabetica
-  //  - Clasificar se termina em .conf
-  //  - meter num vector esse string caso termine em .conf
-  //  - Ordenar alfabeticamente esse vetor com strings
-    Vector configFiles;
-    if(!initVector(&configFiles, sizeof(char *))){
-      fprintf(stderr, "Falhou inicializaçao do vector\n");
-      closedir(configDir);
-      return 1;
-    }
-    struct dirent* entry; 
-    errno = 0; // limpar erros
-
-    int ends_with_conf(const char *filename){
-      size_t len = strlen(filename);
-      if(len < 5) return 0;
-      return strcmp(filename + len - 5,".conf") == 0; 
-      }
-     
-
-    while((entry = readdir(configDir)) != NULL){  //bamos ler ficheiro a ficheiro
-
-
-    }
-  while (entry) {
-    printf("%s\n",entry->d_name);
+  struct dirent* entry;
+  int ok = 1;
+  while (1) {
+    errno = 0;
     entry = readdir(configDir);
-  }
-  if (errno != 0) {
-    fprintf(stderr, "datacenter_configure: Failed reading input files\n");
-    return 1;
-  }
-  if (closedir(configDir) != 0) {
-    fprintf(stderr, "datacenter_configure: Falid closing input directory\n");
-    return 1;
-  }
+    if (!entry) {
+      if (errno != 0) {
+        fprintf(stderr, "Error reading directory %s: %s\n", resources->inputDir, strerror(errno));
+        ok = 0;
+      }
+      break;
+    }
+    if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) //Skip  a coisos que aparecem de forma default
+      continue;
+    char configFilePath[PATH_MAX]; //Path completo do config file
 
-  //Fazer open um a um de cada valor do vetor de strings
+    if (snprintf(configFilePath, sizeof(configFilePath), "%s/%s", resources->inputDir, entry->d_name) >= (int)sizeof(configFilePath)) {
+      fprintf(stderr, "Path too long in %s\n", resources->inputDir);
+      ok = 0;
+      break;
+    }
+    if (file_exists(configFilePath) && ends_with_conf(configFilePath)) { //Certificar que é um ficheiro e que termina em .conf
+      push_back(&configFiles,(void*)configFilePath);
+    }
+  }
+  errno = 0;
+  closedir(configDir);
+  if (errno != 0) {
+    fprintf(stderr,"Error closing directory: %s\n",resources->inputDir);
+    return 0;
+  }
+  if (!ok) {
+    return 0;
+  }
+  #ifdef _DEBUG
+  //Imprimir o vetor de ficheiros .conf apenas para saber se esta todo bem
+  printf("Ficheiros .conf detetados em \"%s\":\n",resources->inputDir);
+  for (size_t i = 0; i < configFiles.size; ++i) {
+    char* path = (char*)getAtVector(&configFiles, i);
+    printf("%s\n",path);
+  }
+  #endif
+
+  //Uma vez o vetor criado agora é so,
+  //  1- Ordenar alfabeticamente os elemenyos
+  //  2- Um for em que itere por cada config em que:
+  //    -> Se obtenha o file descriptor do ficheiro
+  //    -> Seja leida e executada de linha em linha
+
+
+
   //  - Chamar a execuçao de cada linha do ficheiro como se fosse um comando
   //Espaço suficiente para conter o id da reserva, o id da vm, o \0 e 15 para o /tmp/CloudIST/<etc>/ dando no total +16
-
   //Apenas existe uma reserva R por cada ficheiro .conf
-
-
   if (!datacenter_initializeReservationDirectories(dc)) {
-    fprintf(stderr,"Erro tentando fazer as copias recursivas.");
+    fprintf(stderr,"Erro tentando fazer as copias recursivas.\n");
   }
 
   //Only if everything is alright

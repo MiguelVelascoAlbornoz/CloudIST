@@ -118,4 +118,9 @@ const char *vm_state_to_string(VMState state);
  */
 const char *res_state_to_string(ReservationState state);
 
+/*
+ * @return
+ * 1 se o fileName acabar com .conf e 0 caso contrario
+ */
+int ends_with_conf(const char *filename);
 #endif // DATACENTER_UTILS__H

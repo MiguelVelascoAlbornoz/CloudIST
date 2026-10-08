@@ -8,7 +8,7 @@
  * Isto por que copiar byte por byte de um ficheiro a outro é demasiado lento mas tambem levar todos byte sde um ficheiro á ram ao mesmo tmepo pode ser uma má ideia se o ficheiro for demasiado pesado.
  * Caso a função falhar o ressultado quanto a existencia do ficheiro de destino e se foi copiado cada byte de forma exata é impredecivel
  */
-#define FILE_COPY_CHUNK_SIZE 65536
+#define FILE_COPY_CHUNK_SIZE 8192
 
 /**
  * Checks whether a path exists and is a directory.

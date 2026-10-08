@@ -103,7 +103,6 @@ int copiaFicheiro(const char* srcFile, const char* dstFile) {
 }
 int copiaRecursiva(const char* src, const char* dst) {
   //Certificar que dst existe, senão cria-lo
-  struct stat st;
   if (mkdir(dst,  0777) != 0 && errno != EEXIST) {
     fprintf(stderr, "Error creating directory %s: %s\n", dst, strerror(errno));
     return 0;
@@ -153,11 +152,15 @@ int copiaRecursiva(const char* src, const char* dst) {
       }
     }
   }
-
+  errno = 0;
   closedir(direntDIR);
   if (errno != 0) {
-    fprintf(stderr,"Error closing directory: %s",src);
+    fprintf(stderr,"Error closing directory: %s\n",src);
     return 0;
   }
   return ok;
+}
+
+int executePerEachEntry(const char* path, void* func) {
+
 }

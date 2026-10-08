@@ -17,9 +17,7 @@
 
 #define DESIRED_ARGS 6
 int main(int argc, char **argv){
-	if (FILE_COPY_CHUNK_SIZE > PIPE_BUF) {
-		fprintf(stderr, "Define FILE_COPY_CHUNK_SIZE is bigger than PIPE_BUF.\n");
-	}
+
 
 	DataCenter dc;
 	datacenter_init(&dc);

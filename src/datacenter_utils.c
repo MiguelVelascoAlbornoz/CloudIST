@@ -128,7 +128,11 @@ static void reservation_rollback(Reservation *reservation, size_t initial_vms){
 		free(vm);
 	}
 }
-
+int ends_with_conf(const char *filename){
+	size_t len = strlen(filename);
+	if(len < 5) return 0;
+	return strcmp(filename + len - 5,".conf") == 0;
+}
 int reservation_commit(DataCenter *dc, Reservation *reservation){
 	// Keep track of how many vms existed before.
 	size_t initial_vms = reservation->num_vms;
