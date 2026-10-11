@@ -45,8 +45,8 @@ int main(int argc, char **argv){
 	}
 	inputDir = argv[5];
 	#else//Codigo que acontece em debug mode
-	printf("Project name: %s\n ", PROJECT_NAME);
-	printf("Project version: %s\n ", PROJECT_VERSION);
+	printf("Project name: %s\n", PROJECT_NAME);
+	printf("Project version: %s\n", PROJECT_VERSION);
 	printf("Argumento[0]: %d\nArgv: %s\n",argc,*argv); //Para que não haja warning de variaveis nao utilizadas
 		servers = SERVERS;
 		ram = RAM;
