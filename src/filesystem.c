@@ -28,7 +28,25 @@ int file_exists(const char *path){
 
   return S_ISREG(st.st_mode);
 }
+int mkdir_p(const char *path, mode_t mode) {
 
+  char tmp[PATH_MAX];
+  size_t len = strlen(path);
+  if (len == 0 || len >= sizeof(tmp)) return 0;
+  memcpy(tmp, path, len + 1);
+  //Itera-se em tmp (copia de path) ate encontrar um '/'
+  //Uma vez encontrado um '/', é substituido por \0 e cria-se o diretorio ate ali
+  //Uma vez criado volta a por um '/' e continua iterando assim sucessivamente ate o final
+  for (char *p = tmp + 1; *p; p++) {
+    if (*p == '/') {
+      *p = '\0';
+      if (mkdir(tmp, mode) != 0 && errno != EEXIST) return 0;
+      *p = '/';
+    }
+  }
+  if (mkdir(tmp, mode) != 0 && errno != EEXIST) return 0;
+  return 1;
+}
 
 
 int absolute_path(const char *path, char *buffer, size_t size){
@@ -133,8 +151,9 @@ int copyEntryCallback(const char* entryName, void* context) {
 }
 int copiaRecursiva(const char* src, const char* dst) {
   //Certificar que dst existe, senão cria-lo
-  if (mkdir(dst,  0777) != 0 && errno != EEXIST) {
-    fprintf(stderr, "Error creating directory %s: %s\n", dst, strerror(errno));
+  errno = 0;
+  if (mkdir_p(dst,  0777) != 1 && errno != EEXIST) {
+    fprintf(stderr, "Erro tentando criar o diretorio %s: %s\n", dst, strerror(errno));
     return 0;
   }
   //Procurar agora em cada diretorio

@@ -159,12 +159,12 @@ void datacenter_wait(unsigned int delay_ms);
 // -> /tmp/CloudIST/<ID-reserva>/<ID-VM>
 /**
  * @details Esta função nao altera nada do datacenter apenas le as reservas para realizar a copia recursiva
- * @param dc Pointer to a data center
+ * @param res pointer da resservation cujo diretorio deve ser criado
  * @return
  * 0 se aconteceu algum problema
  * 1 se aconteceu todo certo
  */
-int datacenter_initializeReservationDirectories(const DataCenter* dc);
+int datacenter_initializeReservationDirectories(Reservation* res);
 
 
 /**

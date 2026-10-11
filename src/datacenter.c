@@ -13,32 +13,33 @@
 #include <stdnoreturn.h>
 #include <sys/stat.h>
 
-int datacenter_initializeReservationDirectories(const DataCenter* dc) {
+int datacenter_initializeReservationDirectories(Reservation *res)
+{
   //Espaço suficiente para conter o id da reserva, o id da vm, o \0 e 15 para o /tmp/CloudIST/<etc>/ dando no total +16
   //Maximo tamanho que pode chegar a ter o path em que sera colada a copia recursiva
   char path[MAX_STRING_SIZE+MAX_VM_ID_STRING +16] = "/tmp/CloudIST/";
   //Iterar por cada reservação
-  for (size_t i = 0; i < dc->num_reservations; i++) {
-    //Iterar por cada VM de essa resserva //DUVIDA -> Sera que em cada reserva apenas existe um tipo de VM?
-    Reservation res = dc->reservations[i];
-    for (size_t j = 0; j < res.num_vms; j++)
-    {
-      VM* vmInReservation = res.vms[j]; //De cada VM de essa reserva obtem-se o type
-      int n = snprintf(path, sizeof(path), "/tmp/CloudIST/%s/%s",
-                         res.id, vmInReservation->id);
-      if (n < 0 || (size_t)n >= sizeof(path)) {
-        // path truncado: manejar error
-        fprintf(stderr, "Path demasiado largo\n");
-        return 0;
-      }
+
+  //Iterar por cada VM de essa resserva //DUVIDA -> Sera que em cada reserva apenas existe um tipo de VM?
+
+  for (size_t j = 0; j < res->num_vms; j++)
+  {
+    VM* vmInReservation = res->vms[j]; //De cada VM de essa reserva obtem-se o type
+    int n = snprintf(path, sizeof(path), "/tmp/CloudIST/%s/%s",
+                       res->id, vmInReservation->id);
+    if (n < 0 || (size_t)n >= sizeof(path)) {
+      // path truncado: manejar error
+      fprintf(stderr, "Path demasiado largo\n");
+      return 0;
+    }
 
 
-      //Pode -se fazer agora  acopia recursiva
-      if (!copiaRecursiva(vmInReservation->type->input_folder,path)) {
-        return 0;
-      }
+    //Pode -se fazer agora  acopia recursiva
+    if (!copiaRecursiva(vmInReservation->type->input_folder,path)) {
+      return 0;
     }
   }
+
   return 1;
 }
 
@@ -109,12 +110,7 @@ int datacenter_configure(DataCenter *dc, size_t num_servers, Resources *resource
 
   datacenterLoadConfigFiles(dc,&configFiles,resources->inputDir);
   destroyVector(&configFiles);
-  //Apenas existe uma reserva R por cada ficheiro .conf
-  if (!datacenter_initializeReservationDirectories(dc)) {
-    fprintf(stderr, "Erro tentando fazer as copias recursivas.\n");
-    datacenter_destroy(dc);
-    return 1;
-  }
+
 
   return 0;
 }
@@ -203,6 +199,12 @@ int datacenter_execute(DataCenter *dc, const char *reservation_id) {
 
   Reservation *res = find_pending_reservation(dc, reservation_id);
   if (!res) return 1;
+  //Apenas existe uma reserva R por cada ficheiro .conf
+  if (!datacenter_initializeReservationDirectories(res)) {
+    fprintf(stderr, "Erro tentando fazer as copias recursivas da resserva: %s.\n",res->id);
+    datacenter_destroy(dc);
+    return 1;
+  }
 
   if (spawn_all_vms(res) != 0) return 1;
 

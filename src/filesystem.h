@@ -2,6 +2,7 @@
 #define FILESYSTEM__H
 
 #include <stddef.h>
+#include <sys/types.h>
 
 /**
  * Um ficheiro sera copiado em chunks de esta quantidade de bytes.
@@ -80,4 +81,15 @@ typedef int (*EntryCallback)(const char *entry, void *ctx);
  *  - Esta função tambem falha se a chamada a func falha
  */
 int executePerEachEntry(const char* path, EntryCallback func, void* context);
+
+/**
+ * @brief Cria todos os diretorios pais se o diretorio caso nao existirem para criar o diretorio dado no path
+ * @details Ite
+ * @param path
+ * @para mode é o mesmo parametro mode passado a mkdir para criar um unico diretorio
+ * @return
+ *  -> 1 se o diretorio foi criado corretamente
+ *  -> 0 se a chamada falhou
+ */
+int mkdir_p(const char *path, mode_t mode);
 #endif // FILESYSTEM__H
