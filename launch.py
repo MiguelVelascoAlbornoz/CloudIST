@@ -55,7 +55,7 @@ programArgs = args.program_args  # lista de strings
 
 #Configurações do projeto
 projectName = Path.cwd().name
-projectVersion = "0.0.0"
+projectVersion = "1.0.0"
 engineVersion = "0.0.0"
 flags = {
     "debug": [
