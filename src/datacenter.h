@@ -7,6 +7,7 @@
 #include "resources.h"
 #include "constants.h"
 #include "filesystem.h"
+#include "utils/vector.h"
 
 typedef struct VMType{
   char id[MAX_STRING_SIZE];        // Id of VM type. eg: "V1"
@@ -77,6 +78,7 @@ typedef struct DataCenter {
 
 	int configured;		      // Wheter the datacenter is configured or not.
 } DataCenter;
+
 
 /**
  * Initializes a Data Center.
@@ -163,4 +165,13 @@ void datacenter_wait(unsigned int delay_ms);
  * 1 se aconteceu todo certo
  */
 int datacenter_initializeReservationDirectories(const DataCenter* dc);
+
+
+/**
+ * @brief para cada nome em configFiles vai construir o path inteiro com inputDir verificar que existe como ficheiro e obter o seu fileDescriptor. Uma vez com o file descriptor vai chamar process_fd para executar os comandos do ficheiro
+ * @param dc datacenter no qual serao executados os config
+ * @param configFiles Vector que contem os nomes dos ficheiros config na pasta com path inputDir
+ * @param inputDir path do diretorio em que estao os ficheiros config
+ */
+void datacenterLoadConfigFiles(DataCenter* dc, Vector* configFiles, const char *inputDir);
 #endif // DATACENTER__H

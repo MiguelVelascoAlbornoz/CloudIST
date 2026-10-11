@@ -2,6 +2,7 @@
 #define DATACENTER_UTILS__H
 
 #include "datacenter.h"
+#include "utils/vector.h"
 
 /**
  * Checks if a VMType with the given id exists.
@@ -118,9 +119,46 @@ const char *vm_state_to_string(VMState state);
  */
 const char *res_state_to_string(ReservationState state);
 
-/*
+/**
  * @return
  * 1 se o fileName acabar com .conf e 0 caso contrario
  */
 int ends_with_conf(const char *filename);
+/**
+ *  @brief
+ *  Função auxiliiar para usar no qsort
+ *  @return
+ *  Retorna a mesma coisa que strcmp
+ */
+int comparar_strings(const void *a, const void *b);
+
+typedef struct {
+    Vector* configFiles;
+} InsertVectorContext;
+
+/**
+ * @brief Callback chamado por cada ficheiro obtido de um diretorio que insere o nome desse ficheiro num vetor segundo uns filtros.
+ * Não certifica que entryName seja um ficheiro, ainda poderia ser um diretorio
+ * @param entryName -> nome do ficheiro obtido
+ * @param context -> Contem toda a informação necessaria para inserir o nome no vetor
+ * @return
+ */
+int insertEntryInVectorCallback(const char* entryName, void* context);
+/**
+ * @brief
+ * Do file descriptor dado lé a proxcima linha e executa o comando ao qual essa linha corresponde
+ * @param fd fd a ser lido
+ * @param dc  datacenter no qual serão aplicados os comandos
+ * @return
+ * ->Retorna 1 se o fd chegou ao fim
+ * ->Retorna 0 se ainda há mais para ler
+ */
+int process_command(int fd, DataCenter *dc);
+/**
+ * @brief
+ * Para um file descriptor lé todas as linhas ate chegar ao final.
+ * @param fd file descriptor a ser lido
+ * @param dc DataCenter a ser aplicados os comandos
+ */
+void process_fd(int fd, DataCenter *dc);
 #endif // DATACENTER_UTILS__H

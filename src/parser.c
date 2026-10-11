@@ -303,6 +303,8 @@ Command get_next_command(int fd){
   char ch;
   char delimiter;
 
+
+
   if (read(fd, &ch, 1) != 1) {
     return EOC;
   }

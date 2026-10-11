@@ -143,7 +143,7 @@ void getFromVector(Vector* v, size_t index, void* out);
 void setToVector(Vector* vector, size_t index, void* item);
 
 /**
- * @brief Adiciona um elemento ao final do vetor.
+ * @brief Adiciona um elemento ao final do vetor. Esta função copia item pelo que se o item original for destruido a copia neste vetor continua a exsitir
  *
  * Se o vetor estiver cheio, a capacidade é multiplicada por
  * reservationMultiplier (crescendo ao menos 1 elemento).
