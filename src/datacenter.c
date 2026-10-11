@@ -69,36 +69,23 @@ int datacenter_configure(DataCenter *dc, size_t num_servers, Resources *resource
     fprintf(stderr, "Data Center is already configured!\n");
     return 1;
   }
-
   if (num_servers == 0 || resources->ram == 0 || resources->disk == 0 || resources->cpu <= 0.0 || !path_exists(resources->inputDir)) {
     fprintf(stderr, "Invalid configuration values.\n");
     return 1;
   }
-
   dc->servers = (Server*)malloc(num_servers*sizeof(Server));
-
   if(dc->servers == NULL){
     fprintf(stderr, "Failed to allocate memory for servers.\n");
     return 1;
   }
-  int ok = 1;
-  Vector configFiles;//Deve conter os nomes dos ficheiros .config no diretorio especificado
-  if(!initVector(&configFiles, sizeof(char)*(NAME_MAX+1))){
-    fprintf(stderr, "Falhou inicializaçao do vector\n");
-    ok = 0;
-    goto freeMemory;
-  }
-  //Search files in config directory
-  InsertVectorContext insertContext = {.configFiles = &configFiles};
-  if (!executePerEachEntry(resources->inputDir,insertEntryInVectorCallback,&insertContext))
+
+  Vector configFiles;//Deve conter os nomes dos ficheiros .config no diretorio especificado ordenados em ordem alfabetica
+  if (!list_config_files(resources->inputDir,&configFiles))
   {
     fprintf(stderr, "Falhou a obtenção de ficheiros config\n");
-    ok = 0;
-    goto freeMemory;
+    datacenter_destroy(dc);
+    return 1;
   }
-
-  //Ordenar o vetor alfabeticamente
-  qsort(configFiles.data, configFiles.size, configFiles.dataSize, comparar_strings);
 
   #ifdef _DEBUG
   //Imprimir o vetor de ficheiros .conf apenas para saber se esta todo bem
@@ -121,20 +108,12 @@ int datacenter_configure(DataCenter *dc, size_t num_servers, Resources *resource
   dc->configured = 1;
 
   datacenterLoadConfigFiles(dc,&configFiles,resources->inputDir);
-  freeMemory:
   destroyVector(&configFiles);
-  if (!ok)
-  {
-    datacenter_destroy(dc);
-    return 1;
-  }
-
-
   //Apenas existe uma reserva R por cada ficheiro .conf
   if (!datacenter_initializeReservationDirectories(dc)) {
-    fprintf(stderr,"Erro tentando fazer as copias recursivas.\n");
-    ok = 0;
-    goto freeMemory;
+    fprintf(stderr, "Erro tentando fazer as copias recursivas.\n");
+    datacenter_destroy(dc);
+    return 1;
   }
 
   return 0;

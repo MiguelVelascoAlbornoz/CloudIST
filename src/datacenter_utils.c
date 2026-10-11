@@ -417,3 +417,14 @@ int process_command(int fd, DataCenter *dc)
 void process_fd(int fd, DataCenter *dc) {
 	while (!process_command(fd, dc)) { }
 }
+
+int list_config_files(const char *dir, Vector *out) {
+	if (!initVector(out, NAME_MAX + 1)) return 0;
+	InsertVectorContext ctx = { .configFiles = out };
+	if (!executePerEachEntry(dir, insertEntryInVectorCallback, &ctx)) {
+		destroyVector(out);
+		return 0;
+	}
+	qsort(out->data, out->size, out->dataSize, comparar_strings);
+	return 1;
+}

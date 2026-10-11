@@ -161,4 +161,11 @@ int process_command(int fd, DataCenter *dc);
  * @param dc DataCenter a ser aplicados os comandos
  */
 void process_fd(int fd, DataCenter *dc);
+/**
+ * @brief Devolve um vetor ordenado com os nomes dos vetores .conf no diretorio dado
+ * @details O usuario deve chamar porsteriormente destroyVector
+ * @return
+ *  -> 0 em caso de erro
+ */
+int list_config_files(const char *dir, Vector *out);
 #endif // DATACENTER_UTILS__H
