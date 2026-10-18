@@ -252,12 +252,12 @@ void spawn_vm_child(VM *vm, Resources* res, size_t numServers) {
 	struct rlimit lim;
 
 	lim.rlim_cur = lim.rlim_max = (rlim_t)vm->type->required.ram << 30;
-	setrlimit(RLIMIT_AS, &lim);
+	if (!setrlimit(RLIMIT_AS, &lim)) _exit(126);
 
 	lim.rlim_cur = lim.rlim_max = (rlim_t)vm->type->required.disk << 30;
-	setrlimit(RLIMIT_FSIZE, &lim);
+	if (!setrlimit(RLIMIT_FSIZE, &lim)) _exit(126);
 
-	chdir(vm->path);
+	if (!chdir(vm->path)) _exit(126);
 
 	char limit[32]; //Transforma
 	int CPULIMIT = 100.0f*vm->type->required.cpu *res->localCoresCount / (res->cpu*numServers);
