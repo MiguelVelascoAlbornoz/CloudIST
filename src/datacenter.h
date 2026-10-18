@@ -9,6 +9,8 @@
 #include "filesystem.h"
 #include "utils/vector.h"
 
+
+#define TMP_FILES_PATH "/tmp/CloudIST/"
 typedef struct VMType{
   char id[MAX_STRING_SIZE];        // Id of VM type. eg: "V1"
   char input_folder[MAX_PATH_SIZE];  // Folder with input for executable
@@ -30,6 +32,7 @@ typedef struct VM {
   Server *server; // Server where the VM is placed.
   pid_t pid;      // PID of executable file.
   VMState state;  // State of the VM.
+	char path[MAX_PATH_SIZE];
 } VM;
 
 typedef struct Server {

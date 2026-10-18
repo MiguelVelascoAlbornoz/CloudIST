@@ -247,21 +247,44 @@ void reservation_destroy(DataCenter *dc, Reservation *reservation) {
 	dc->num_reservations--;
 }
 
-void spawn_vm_child(VM *vm) {
+void spawn_vm_child(VM *vm, Resources* res, size_t numServers) {
 	(void)vm; // To avoid warning.
+	struct rlimit lim;
 
-	// TODO: Limit RAM, DISK and use exec with cpulimit.
+	lim.rlim_cur = lim.rlim_max = (rlim_t)vm->type->required.ram << 30;
+	setrlimit(RLIMIT_AS, &lim);
 
-	fprintf(stderr, "VM execution not implemented in base version.\n");
+	lim.rlim_cur = lim.rlim_max = (rlim_t)vm->type->required.disk << 30;
+	setrlimit(RLIMIT_FSIZE, &lim);
+
+	chdir(vm->path);
+
+	char limit[32]; //Transforma
+	int CPULIMIT = 100.0f*vm->type->required.cpu *res->localCoresCount / (res->cpu*numServers);
+	snprintf(limit, sizeof(limit), "%d", (int)(CPULIMIT));
+	CPULIMIT*= 100;
+	execlp("cpulimit", "cpulimit", "-q", "-f", "-l", limit,
+		   "--", vm->type->exec_path, (char *)NULL);
+
 }
 
-int spawn_all_vms(Reservation *res) {
+int spawn_all_vms(Reservation *res,Resources *dataCenterResources, size_t numServers) {
 	for (size_t i = 0; i < res->num_vms; i++) {
 		VM *vm = res->vms[i];
+		pid_t pid = fork();
+		if (pid < 0)
+		{
+			//Assume-se que o fork nao falha
+		} else if (pid == 0)
+		{
+			spawn_vm_child(vm,dataCenterResources, numServers);
+			_exit(127);
+		} else
+		{
+			vm->pid = pid;
+			vm->state = VM_STATE_RUNNING;
+		}
 
-		// TODO: Implement fork code. Set VM PID and update VM state to running.
-
-		spawn_vm_child(vm);
 
 	}
 

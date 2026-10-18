@@ -92,4 +92,13 @@ int executePerEachEntry(const char* path, EntryCallback func, void* context);
  *  -> 0 se a chamada falhou
  */
 int mkdir_p(const char *path, mode_t mode);
+
+/**
+ *
+ * @param path
+ * @return
+ *  1 -> Se o diretorio foi removido corretamente
+ *  0 -> Caso falhe a remoção do diretorio
+ */
+int removeDir(const char* path);
 #endif // FILESYSTEM__H

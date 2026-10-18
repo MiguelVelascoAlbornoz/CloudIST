@@ -15,21 +15,17 @@
 
 int datacenter_initializeReservationDirectories(Reservation *res)
 {
-  //Espaço suficiente para conter o id da reserva, o id da vm, o \0 e 15 para o /tmp/CloudIST/<etc>/ dando no total +16
-  //Maximo tamanho que pode chegar a ter o path em que sera colada a copia recursiva
-  char path[MAX_STRING_SIZE+MAX_VM_ID_STRING +16] = "/tmp/CloudIST/";
-  //Iterar por cada reservação
 
   //Iterar por cada VM de essa resserva //DUVIDA -> Sera que em cada reserva apenas existe um tipo de VM?
 
   for (size_t j = 0; j < res->num_vms; j++)
   {
     VM* vmInReservation = res->vms[j]; //De cada VM de essa reserva obtem-se o type
-    int n = snprintf(path, sizeof(path), "/tmp/CloudIST/%s/%s",
-                       res->id, vmInReservation->id);
+    char* path = vmInReservation->path;
+    int n = snprintf(path, MAX_PATH_SIZE,  "%s%s/%s", TMP_FILES_PATH,res->id, vmInReservation->id);
     if (n < 0 || (size_t)n >= sizeof(path)) {
       // path truncado: manejar error
-      fprintf(stderr, "Path demasiado largo\n");
+      fprintf(stderr, "Nomes das resservas demasiado longos como para criar um path.\n");
       return 0;
     }
 
@@ -53,9 +49,18 @@ void datacenter_init(DataCenter *dc) {
   dc->num_reservations = 0;
 
   dc->configured = 0;
+
+
 }
 
 void datacenter_destroy(DataCenter *dc) {
+  if (path_exists(TMP_FILES_PATH))
+  {
+    if (!removeDir(TMP_FILES_PATH))
+    {
+      fprintf(stderr, "Error removing temporary files.\n");
+    }
+  }
   for (size_t i = 0; i < dc->num_servers; i++) {
     for(size_t j = 0; j < dc->servers[i].num_hosted_vms; j++){
       free(dc->servers[i].hosted_vms[j]);
@@ -70,6 +75,16 @@ int datacenter_configure(DataCenter *dc, size_t num_servers, Resources *resource
     fprintf(stderr, "Data Center is already configured!\n");
     return 1;
   }
+  //Remove tmp dirs if exist
+  if (path_exists(TMP_FILES_PATH))
+  {
+    if  (!removeDir(TMP_FILES_PATH))
+    {
+      fprintf(stderr, "Error removing last execution temporary files.\n");
+      return 1;
+    }
+  }
+
   if (num_servers == 0 || resources->ram == 0 || resources->disk == 0 || resources->cpu <= 0.0 || !path_exists(resources->inputDir)) {
     fprintf(stderr, "Invalid configuration values.\n");
     return 1;
@@ -202,11 +217,10 @@ int datacenter_execute(DataCenter *dc, const char *reservation_id) {
   //Apenas existe uma reserva R por cada ficheiro .conf
   if (!datacenter_initializeReservationDirectories(res)) {
     fprintf(stderr, "Erro tentando fazer as copias recursivas da resserva: %s.\n",res->id);
-    datacenter_destroy(dc);
     return 1;
   }
 
-  if (spawn_all_vms(res) != 0) return 1;
+  if (spawn_all_vms(res,&dc->servers[0].total,dc->num_servers) != 0) return 1;
 
   res->state = RES_STATE_RUNNING;
 

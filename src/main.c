@@ -14,9 +14,10 @@
 	#define DISK 350
 	#define CPU 16+12
 	#define INPUT_DIR "config"
+	#define LOCAL_CORES_AVAILABLES 4
 #endif
 
-#define DESIRED_ARGS 6
+#define DESIRED_ARGS 7
 
 
 int main(int argc, char **argv){
@@ -31,15 +32,17 @@ int main(int argc, char **argv){
 	size_t disk;
 	double cpu;
 	const char* inputDir;
+	size_t localCoresCount;
 	#ifndef _DEBUG //O executavel debug nao pede argumentos para ser mais facil o debug entao este codigo nao acontece se for debug mode
 	if (argc != DESIRED_ARGS) {
-		fprintf(stderr, "Usage: %s <servers> <ram> <disk> <cpus> <input dir>\n", argv[0]);
+		fprintf(stderr, "Usage: %s <servers> <ram> <disk> <cpus> <input dir> <cores-disponiveis-para-CloudIST>\n", argv[0]);
 		return 1;
 	}
 	if (parse_size_t_arg(argv[1], &servers) != 0 ||
 			parse_size_t_arg(argv[2], &ram) != 0 ||
 			parse_size_t_arg(argv[3], &disk) != 0 ||
-			parse_double_arg(argv[4], &cpu) != 0) {
+			parse_double_arg(argv[4], &cpu) != 0 ||
+			parse_size_t_arg(argv[6], &localCoresCount) != 0) {
 		fprintf(stderr, "Invalid command line arguments.\n");
 		return 1;
 	}
@@ -53,6 +56,7 @@ int main(int argc, char **argv){
 		disk = DISK;disk = DISK;
 		cpu = CPU;
 		inputDir = INPUT_DIR;
+		localCoresCount = LOCAL_CORES_AVAILABLES;
 	#endif
 
 
@@ -61,6 +65,7 @@ int main(int argc, char **argv){
     .disk = disk,
     .cpu = cpu,
 	.inputDir = inputDir,
+		.localCoresCount = localCoresCount
 	};
 
 	if(datacenter_configure(&dc, servers, &resources) != 0){

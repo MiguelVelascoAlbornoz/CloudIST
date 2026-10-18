@@ -8,6 +8,7 @@ typedef struct {
     size_t disk; // Disk Space in GB
     double cpu;  // Number of cores/Vcpu
     const char* inputDir;
+    size_t localCoresCount;
 } Resources;
 
 /**

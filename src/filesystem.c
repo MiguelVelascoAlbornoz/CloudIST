@@ -11,6 +11,8 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <errno.h>
+#include <sys/wait.h>
+
 int path_exists(const char *path){
   struct stat st;
 
@@ -193,4 +195,31 @@ int executePerEachEntry(const char* path, EntryCallback func, void* context) {
   }
 
   return 1;
+}
+
+int removeDir(const char* path)
+{
+  pid_t pid = fork();
+  if (pid < 0)
+  {
+    return 0;
+  }
+  //Execução do filho
+  if (pid == 0)
+  {
+    execlp("rm", "rm", "-rf","--",path, NULL);
+    _exit(127);
+  }
+  int status;
+  if (waitpid(pid, &status, 0) == -1)
+  {
+    return 0;
+  }
+  if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
+  {
+    return 1;
+  } else
+  {
+    return 0;
+  }
 }
