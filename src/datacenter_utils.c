@@ -257,7 +257,6 @@ void spawn_vm_child(VM *vm, Resources* res, size_t numServers) {
 	lim.rlim_cur = lim.rlim_max = (rlim_t)vm->type->required.disk << 30;
 	if (!setrlimit(RLIMIT_FSIZE, &lim)) _exit(126);
 
-	if (!chdir(vm->path)) _exit(126);
 
 	char limit[32]; //Transforma
 	int CPULIMIT = 100.0f*vm->type->required.cpu *res->localCoresCount / (res->cpu*numServers);
@@ -284,7 +283,6 @@ int spawn_all_vms(Reservation *res,Resources *dataCenterResources, size_t numSer
 			vm->pid = pid;
 			vm->state = VM_STATE_RUNNING;
 		}
-
 
 	}
 
