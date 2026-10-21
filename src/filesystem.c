@@ -153,14 +153,18 @@ int copyEntryCallback(const char* entryName, void* context) {
 }
 int copiaRecursiva(const char* src, const char* dst) {
   //Certificar que dst existe, senão cria-lo
-  errno = 0;
-  if (mkdir_p(dst,  0777) != 1 && errno != EEXIST) {
+  if (!mkdir_p(dst,  0777)) {
     fprintf(stderr, "Erro tentando criar o diretorio %s: %s\n", dst, strerror(errno));
     return 0;
   }
   //Procurar agora em cada diretorio
   CopyContext ctx = { src, dst };
-  return executePerEachEntry(src, copyEntryCallback, &ctx);
+  if (!executePerEachEntry(src, copyEntryCallback, &ctx))
+  {
+    removeDir(dst);
+    return 0;
+  }
+  return 1;
 }
 
 int executePerEachEntry(const char* path, EntryCallback func, void* context) {

@@ -15,6 +15,7 @@
 	#define CPU 16+12
 	#define INPUT_DIR "config"
 	#define LOCAL_CORES_AVAILABLES 4
+	#define MAX_THREADS 20
 #endif
 
 #define DESIRED_ARGS 7

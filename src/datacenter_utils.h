@@ -88,7 +88,7 @@ void spawn_vm_child(VM *vm,Resources* dataCenterResources, size_t numServers);
  * @param res Pointer to the Reservation whose VMs should be spawned.
  *
  * @return 0 on success.
- * @return 1 if any fork() call fails.
+ * @return 1 if directories creation fails.
  */
 int spawn_all_vms(Reservation *res, Resources *resources, size_t numServers);
 
@@ -162,10 +162,31 @@ int process_command(int fd, DataCenter *dc);
  */
 void process_fd(int fd, DataCenter *dc);
 /**
+ * @details out nao deve estar inicializado antes da chamada
  * @brief Devolve um vetor ordenado com os nomes dos vetores .conf no diretorio dado
  * @details O usuario deve chamar porsteriormente destroyVector
  * @return
  *  -> 0 em caso de erro
  */
 int list_config_files(const char *dir, Vector *out);
+
+//Esta função ira copiar recursivamente para cada reservação e cada VM da sua respetiva reservação os ficheiros da diretoria de entrada do propio VMType a uma diretoria tal que
+// -> /tmp/CloudIST/<ID-reserva>/<ID-VM>
+/**
+ * @details Esta função nao altera nada do datacenter apenas le as reservas para realizar a copia recursiva.
+ * Se a copia falhar o diretorio nao existira
+ * @param pointer da vm cujo diretorio deve ser criado
+ * @return
+ * 0 se aconteceu algum problema
+ * 1 se aconteceu todo certo
+ */
+int initializeVmDirectories(VM* vmToInitialize, const char* reservationID);
+/**
+ *@details Em caso de falhar nao existiram diretorios nenhums
+ * @brief para cada nome em configFiles vai construir o path inteiro com inputDir verificar que existe como ficheiro e obter o seu fileDescriptor. Uma vez com o file descriptor vai chamar process_fd para executar os comandos do ficheiro
+ * @param dc datacenter no qual serao executados os config
+ * @param configFiles Vector que contem os nomes dos ficheiros config na pasta com path inputDir
+ * @param inputDir path do diretorio em que estao os ficheiros config
+ */
+void datacenterLoadConfigFiles(DataCenter* dc, Vector* configFiles, const char *inputDir);
 #endif // DATACENTER_UTILS__H

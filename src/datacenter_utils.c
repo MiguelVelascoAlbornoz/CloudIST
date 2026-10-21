@@ -1,4 +1,8 @@
 #include "datacenter_utils.h"
+
+#include <errno.h>
+#include <fcntl.h>
+
 #include "datacenter.h"
 
 #include <stdio.h>
@@ -248,14 +252,14 @@ void reservation_destroy(DataCenter *dc, Reservation *reservation) {
 }
 
 void spawn_vm_child(VM *vm, Resources* res, size_t numServers) {
-	(void)vm; // To avoid warning.
+	(void)vm;
 	struct rlimit lim;
-
+	if (chdir(vm->path) != 0) _exit(126);
 	lim.rlim_cur = lim.rlim_max = (rlim_t)vm->type->required.ram << 30;
-	if (!setrlimit(RLIMIT_AS, &lim)) _exit(126);
+	if (setrlimit(RLIMIT_AS, &lim)) _exit(126);
 
 	lim.rlim_cur = lim.rlim_max = (rlim_t)vm->type->required.disk << 30;
-	if (!setrlimit(RLIMIT_FSIZE, &lim)) _exit(126);
+	if (setrlimit(RLIMIT_FSIZE, &lim)) _exit(126);
 
 
 	char limit[32]; //Transforma
@@ -270,6 +274,11 @@ void spawn_vm_child(VM *vm, Resources* res, size_t numServers) {
 int spawn_all_vms(Reservation *res,Resources *dataCenterResources, size_t numServers) {
 	for (size_t i = 0; i < res->num_vms; i++) {
 		VM *vm = res->vms[i];
+		if (!initializeVmDirectories(vm,res->id))
+		{
+			fprintf(stderr, "Failed to initialize directories of VM: \"%s\" .\n",vm->id);
+			continue;
+		}
 		pid_t pid = fork();
 		if (pid < 0)
 		{
@@ -448,4 +457,45 @@ int list_config_files(const char *dir, Vector *out) {
 	}
 	qsort(out->data, out->size, out->dataSize, comparar_strings);
 	return 1;
+}
+
+int initializeVmDirectories(VM *vmInReservation, const char* reservationID)
+{
+	char* path = vmInReservation->path;
+	int n = snprintf(path, MAX_PATH_SIZE,  "%s%s/%s", TMP_FILES_PATH,reservationID, vmInReservation->id);
+	if (n < 0 || (size_t)n >= MAX_PATH_SIZE) {
+		//PATH a junção forma um nome demasiado longo
+		fprintf(stderr, "Nomes das resservas demasiado longos como para criar um path.\n");
+		return 0;
+	}
+	//Pode -se fazer agora  acopia recursiva
+	if (!copiaRecursiva(vmInReservation->type->input_folder,path)) {
+		return 0;
+	}
+
+
+	return 1;
+}
+void datacenterLoadConfigFiles(DataCenter* dc, Vector* configFiles, const char *inputDir)
+{
+	for (size_t i = 0; i < configFiles->size; ++i)
+	{
+		//Criação do path completo
+		char configFilePath[PATH_MAX+1];
+		if (snprintf(configFilePath, sizeof(configFilePath), "%s/%s",inputDir, (char*)getAtVector(configFiles,i)) >= (int)sizeof(configFilePath)) {
+			fprintf(stderr, "Path too long in %s\n",    inputDir);
+			continue;
+		}
+		//Verificar que é um ficheiro e nao um diretorio
+		if (!file_exists(configFilePath)) continue;
+		int configFD = open(configFilePath, O_RDONLY);
+		if (configFD < 0) {
+			fprintf(stderr, "Error opening file %s: %s\n", configFilePath, strerror(errno));
+			continue;
+		}
+		//Uma vez o file descriptor obtido agora é so usra as funções par ler comandos que ja existem
+		process_fd(configFD,dc);
+		close(configFD);
+	}
+
 }

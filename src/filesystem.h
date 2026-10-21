@@ -49,7 +49,7 @@ int absolute_path(const char *path, char *buffer, size_t size);
  * @details
  * Tem de se garantir que a diretoria src já exista.
  * Cria a diretoria dst caso não exista.
- * Caso a copia recursiva tenha falhado em alguma etapa o diretorio de destino pode ficar medio construido pelo que o resultado sera impredecivel
+ * Caso qualquer etapa tenha falhado o diretorio dst nao existira
  * @param src Path aonde se vao copiar os ficheiros, tem de se garantir a sua existencia antes da chamada
  * @param dst Path de destino, caso nao exista sera criado
  * @return
@@ -61,7 +61,7 @@ int copiaRecursiva(const char* src, const char* dst);
 /**
  * @details O usuario deve garantir a existencia de srcFile e que a diretoria que ira conter dstFile exista
  * @param srcFile path do ficheiro a ser copiado
- * @param dstFile diretoria em que devera ser colocado a copia do ficheiro (já deve contem o propio nome do ficheiro)
+ * @param dstFile diretoria em que devera ser colocado a copia do ficheiro (já deve contem o propio nome do ficheiro), dst nao pode estar dentro de src ou havera uma copia infinita
  * @return
  *  1 caso a copia tenha sido bem sucedida
  *  0 caso contrario

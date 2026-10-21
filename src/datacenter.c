@@ -13,31 +13,6 @@
 #include <stdnoreturn.h>
 #include <sys/stat.h>
 
-int datacenter_initializeReservationDirectories(Reservation *res)
-{
-
-  //Iterar por cada VM de essa resserva //DUVIDA -> Sera que em cada reserva apenas existe um tipo de VM?
-
-  for (size_t j = 0; j < res->num_vms; j++)
-  {
-    VM* vmInReservation = res->vms[j]; //De cada VM de essa reserva obtem-se o type
-    char* path = vmInReservation->path;
-    int n = snprintf(path, MAX_PATH_SIZE,  "%s%s/%s", TMP_FILES_PATH,res->id, vmInReservation->id);
-    if (n < 0 || (size_t)n >= sizeof(path)) {
-      // path truncado: manejar error
-      fprintf(stderr, "Nomes das resservas demasiado longos como para criar um path.\n");
-      return 0;
-    }
-
-
-    //Pode -se fazer agora  acopia recursiva
-    if (!copiaRecursiva(vmInReservation->type->input_folder,path)) {
-      return 0;
-    }
-  }
-
-  return 1;
-}
 
 
 void datacenter_init(DataCenter *dc) {
@@ -84,7 +59,6 @@ int datacenter_configure(DataCenter *dc, size_t num_servers, Resources *resource
       return 1;
     }
   }
-
   if (num_servers == 0 || resources->ram == 0 || resources->disk == 0 || resources->cpu <= 0.0 || !path_exists(resources->inputDir)) {
     fprintf(stderr, "Invalid configuration values.\n");
     return 1;
@@ -94,7 +68,6 @@ int datacenter_configure(DataCenter *dc, size_t num_servers, Resources *resource
     fprintf(stderr, "Failed to allocate memory for servers.\n");
     return 1;
   }
-
   Vector configFiles;//Deve conter os nomes dos ficheiros .config no diretorio especificado ordenados em ordem alfabetica
   if (!list_config_files(resources->inputDir,&configFiles))
   {
@@ -104,7 +77,7 @@ int datacenter_configure(DataCenter *dc, size_t num_servers, Resources *resource
   }
 
   #ifdef _DEBUG
-  //Imprimir o vetor de ficheiros .conf apenas para saber se esta todo bem
+  //Imprimir o vetor de ficheiros .conf apenas para saber se esta t\odo bem
   printf("Ficheiros .conf detetados em \"%s\":\n",resources->inputDir);
   for (size_t i = 0; i < configFiles.size; ++i) {
     char* path = (char*)getAtVector(&configFiles, i);
@@ -112,7 +85,7 @@ int datacenter_configure(DataCenter *dc, size_t num_servers, Resources *resource
   }
   #endif
 
-  //Uma vez todo certo podemos inicializar as variaveis e carregar os config files
+  //Uma vez t\odo certo podemos inicializar as variaveis e carregar os config files
   for (size_t i = 0; i < num_servers; i++) {
     dc->servers[i].id = i+1;
     dc->servers[i].total = *resources;
@@ -129,28 +102,7 @@ int datacenter_configure(DataCenter *dc, size_t num_servers, Resources *resource
 
   return 0;
 }
-void datacenterLoadConfigFiles(DataCenter* dc, Vector* configFiles, const char *inputDir)
-{
-  for (size_t i = 0; i < configFiles->size; ++i)
-  {
-    //Criação do path completo
-    char configFilePath[PATH_MAX+1];
-    if (snprintf(configFilePath, sizeof(configFilePath), "%s/%s",inputDir, (char*)getAtVector(configFiles,i)) >= (int)sizeof(configFilePath)) {
-      fprintf(stderr, "Path too long in %s\n",    inputDir);
-      continue;
-    }
-    //Verificar que é um ficheiro e nao um diretorio
-    if (!file_exists(configFilePath)) continue;
-    int configFD = open(configFilePath, O_RDONLY);
-    if (configFD < 0) {
-      fprintf(stderr, "Error opening file %s: %s\n", configFilePath, strerror(errno));
-      continue;
-    }
-    //Uma vez o file descriptor obtido agora é so usra as funções par ler comandos que ja existem
-    process_fd(configFD,dc);
-  }
 
-}
 int datacenter_define_VM(DataCenter *dc, VMType *type){
   if (!dc->configured) {
     fprintf(stderr, "Data Center needs to be configured!\n");
@@ -215,10 +167,10 @@ int datacenter_execute(DataCenter *dc, const char *reservation_id) {
   Reservation *res = find_pending_reservation(dc, reservation_id);
   if (!res) return 1;
   //Apenas existe uma reserva R por cada ficheiro .conf
-  if (!datacenter_initializeReservationDirectories(res)) {
-    fprintf(stderr, "Erro tentando fazer as copias recursivas da resserva: %s.\n",res->id);
-    return 1;
-  }
+  //if (!datacenter_initializeReservationDirectories(res)) {
+  //  fprintf(stderr, "Erro tentando fazer as copias recursivas da resserva: %s.\n",res->id);
+  //  return 1;
+  //}
 
   if (spawn_all_vms(res,&dc->servers[0].total,dc->num_servers) != 0) return 1;
 

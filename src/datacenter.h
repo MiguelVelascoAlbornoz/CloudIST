@@ -158,23 +158,7 @@ int datacenter_execute(DataCenter *dc, const char *reservation_id);
  */
 void datacenter_wait(unsigned int delay_ms);
 
-//Esta função ira copiar recursivamente para cada reservação e cada VM da sua respetiva reservação os ficheiros da diretoria de entrada do propio VMType a uma diretoria tal que
-// -> /tmp/CloudIST/<ID-reserva>/<ID-VM>
-/**
- * @details Esta função nao altera nada do datacenter apenas le as reservas para realizar a copia recursiva
- * @param res pointer da resservation cujo diretorio deve ser criado
- * @return
- * 0 se aconteceu algum problema
- * 1 se aconteceu todo certo
- */
-int datacenter_initializeReservationDirectories(Reservation* res);
 
 
-/**
- * @brief para cada nome em configFiles vai construir o path inteiro com inputDir verificar que existe como ficheiro e obter o seu fileDescriptor. Uma vez com o file descriptor vai chamar process_fd para executar os comandos do ficheiro
- * @param dc datacenter no qual serao executados os config
- * @param configFiles Vector que contem os nomes dos ficheiros config na pasta com path inputDir
- * @param inputDir path do diretorio em que estao os ficheiros config
- */
-void datacenterLoadConfigFiles(DataCenter* dc, Vector* configFiles, const char *inputDir);
+
 #endif // DATACENTER__H
