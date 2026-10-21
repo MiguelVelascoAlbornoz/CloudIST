@@ -208,6 +208,7 @@ void reservation_destroy(DataCenter *dc, Reservation *reservation) {
 	// Free every VM belonging to the reservation.
 	for (size_t i = 0; i < reservation->num_vms; i++) {
 		VM *vm = reservation->vms[i];
+
 		Server *server = vm->server;
 
 		// Return the VM resources back to the hosting server.
@@ -225,7 +226,7 @@ void reservation_destroy(DataCenter *dc, Reservation *reservation) {
 				break;
 			}
 		}
-
+		removeDir(vm->path);
 		free(vm);
 		reservation->vms[i] = NULL;
 	}
@@ -254,6 +255,11 @@ void reservation_destroy(DataCenter *dc, Reservation *reservation) {
 void spawn_vm_child(VM *vm, Resources* res, size_t numServers) {
 	(void)vm;
 	struct rlimit lim;
+	char execAbs[MAX_PATH_SIZE];
+	if (absolute_path(vm->path, execAbs, sizeof(execAbs)) != 0) {
+		fprintf(stderr, "Cannot resolve executable path of VM %s.\n", vm->id);
+		_exit(126);
+	}
 	if (chdir(vm->path) != 0) _exit(126);
 	lim.rlim_cur = lim.rlim_max = (rlim_t)vm->type->required.ram << 30;
 	if (setrlimit(RLIMIT_AS, &lim)) _exit(126);
@@ -300,8 +306,7 @@ int spawn_all_vms(Reservation *res,Resources *dataCenterResources, size_t numSer
 
 void wait_for_all_vms(Reservation *res) {
 	for (size_t i = 0; i < res->num_vms; i++) {
-		// TODO: IMPLEMENT WAITING FOR VM
-
+		//TODO: IMPLEMENT WAITING FOR VM
 		res->vms[i]->state = VM_STATE_TERMINATED;
 	}
 }
@@ -481,7 +486,7 @@ void datacenterLoadConfigFiles(DataCenter* dc, Vector* configFiles, const char *
 	for (size_t i = 0; i < configFiles->size; ++i)
 	{
 		//Criação do path completo
-		char configFilePath[PATH_MAX+1];
+		char configFilePath[PATH_MAX];
 		if (snprintf(configFilePath, sizeof(configFilePath), "%s/%s",inputDir, (char*)getAtVector(configFiles,i)) >= (int)sizeof(configFilePath)) {
 			fprintf(stderr, "Path too long in %s\n",    inputDir);
 			continue;

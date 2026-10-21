@@ -73,6 +73,7 @@ Reservation *find_pending_reservation(DataCenter *dc, const char *reservation_id
 void reservation_destroy(DataCenter *dc, Reservation *reservation);
 
 /**
+ *  @details Esta função apenas deve ser chamada por um processo filho!!
  * Runs in the child process after fork(): sets resource limits (RAM,
  * disk) and execs the VM's workload under cpulimit. Never returns
  * (either execs successfully or calls exit(1) on failure).
