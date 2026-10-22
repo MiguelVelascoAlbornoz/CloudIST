@@ -29,6 +29,7 @@ void datacenter_init(DataCenter *dc) {
 }
 
 void datacenter_destroy(DataCenter *dc) {
+  pthread_mutex_destroy(&dc->threadCreationMutex);
   if (path_exists(TMP_FILES_PATH))
   {
     if (!removeDir(TMP_FILES_PATH))
@@ -92,7 +93,7 @@ int datacenter_configure(DataCenter *dc, size_t num_servers, Resources *resource
     dc->servers[i].available = *resources;
     dc->servers[i].num_hosted_vms = 0;
   }
-
+  pthread_mutex_init(&dc->threadCreationMutex, NULL);
   dc->num_servers = num_servers;
   dc->configured = 1;
 
@@ -172,7 +173,7 @@ int datacenter_execute(DataCenter *dc, const char *reservation_id) {
   //  return 1;
   //}
 
-  if (spawn_all_vms(res,&dc->servers[0].total,dc->num_servers) != 0) return 1;
+  if (spawn_all_vms(res,dc->localCoresCount,dc->num_servers) != 0) return 1;
 
   res->state = RES_STATE_RUNNING;
 

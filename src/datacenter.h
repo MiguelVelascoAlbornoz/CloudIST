@@ -75,10 +75,12 @@ typedef struct DataCenter {
 
 	VMType vm_types[MAX_VM_TYPES];
     size_t num_vm_types;
-
+	size_t localCoresCount;
+	size_t maxThreads;
+	size_t availableThreads;
 	Reservation reservations[MAX_RESERVATIONS];
     size_t num_reservations;
-
+	pthread_mutex_t threadCreationMutex;
 	int configured;		      // Wheter the datacenter is configured or not.
 } DataCenter;
 

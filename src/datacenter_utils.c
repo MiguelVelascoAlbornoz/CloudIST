@@ -252,7 +252,7 @@ void reservation_destroy(DataCenter *dc, Reservation *reservation) {
 	dc->num_reservations--;
 }
 
-void spawn_vm_child(VM *vm, Resources* res, size_t numServers) {
+void spawn_vm_child(VM *vm, double localCoresCount, size_t numServers) {
 	(void)vm;
 	struct rlimit lim;
 	char execAbs[MAX_PATH_SIZE];
@@ -269,7 +269,8 @@ void spawn_vm_child(VM *vm, Resources* res, size_t numServers) {
 
 
 	char limit[32]; //Transforma
-	int CPULIMIT = 100.0f*vm->type->required.cpu *res->localCoresCount / (res->cpu*numServers);
+	//atualmente todos os servers tem o mesmo cpu
+	int CPULIMIT = 100.0f*vm->type->required.cpu *localCoresCount / (vm->server->total.cpu*numServers);
 	snprintf(limit, sizeof(limit), "%d", (int)(CPULIMIT));
 	CPULIMIT*= 100;
 	execlp("cpulimit", "cpulimit", "-q", "-f", "-l", limit,
@@ -277,7 +278,7 @@ void spawn_vm_child(VM *vm, Resources* res, size_t numServers) {
 
 }
 
-int spawn_all_vms(Reservation *res,Resources *dataCenterResources, size_t numServers) {
+int spawn_all_vms(Reservation *res,double localCoresCount, size_t numServers) {
 	for (size_t i = 0; i < res->num_vms; i++) {
 		VM *vm = res->vms[i];
 		if (!initializeVmDirectories(vm,res->id))
@@ -291,7 +292,7 @@ int spawn_all_vms(Reservation *res,Resources *dataCenterResources, size_t numSer
 			//Assume-se que o fork nao falha
 		} else if (pid == 0)
 		{
-			spawn_vm_child(vm,dataCenterResources, numServers);
+			spawn_vm_child(vm,localCoresCount, numServers);
 			_exit(127);
 		} else
 		{
@@ -503,4 +504,53 @@ void datacenterLoadConfigFiles(DataCenter* dc, Vector* configFiles, const char *
 		close(configFD);
 	}
 
+}
+typedef struct {
+	DataCenter *dc;
+	void*(*func) (void*);
+	void *arg;
+} ThreadCreationArgs;
+/**
+ * @brief Simplesmente liberta um thread antes da sua morte. Sempre deve ser executado que um thread do sistema termine
+ * @param p Deve ser um datacenter
+ */
+static void releaseSlot(void *p) {
+	DataCenter *dc = p;
+	pthread_mutex_lock(&dc->threadCreationMutex);
+	dc->availableThreads++;
+	pthread_mutex_unlock(&dc->threadCreationMutex);
+}
+/**
+ * @brief Esta função "substitue" a criação de um thread pois é ela quem realmente chama á função dada para o thread
+ * Mas entre tanto garante a libertação de thread no sistema antes da sua destruição. É como uma função que simplifica a notificação do fim de um thread ao datacenter.
+ * @param p informação nevcessaria para criar um thread e notifica-lo no sistema.
+ */
+static void* threadWrapper(void *p) {
+	ThreadCreationArgs a = *(ThreadCreationArgs *)p;//Copia so o conteudo
+	free(p);
+
+
+	void *r = NULL;
+	pthread_cleanup_push(releaseSlot, a.dc);
+	r = a.func(a.arg);
+	pthread_cleanup_pop(1);
+	return r;
+}
+int askDataCenterThread(DataCenter* dc,pthread_t* tid,void *(*func) (void *),void* args) {
+	pthread_mutex_lock(&dc->threadCreationMutex);
+	if (dc->availableThreads <= 0) {
+		pthread_mutex_unlock(&dc->threadCreationMutex);
+		fprintf(stderr, "Not available threads in the datacenter.\n");
+		return -1;
+	}
+	dc->availableThreads--;//Se faz a resserva logo
+	pthread_mutex_unlock(&dc->threadCreationMutex);
+
+	if (pthread_create(tid,NULL,func,NULL) != 0) {
+		pthread_mutex_lock(&dc->threadCreationMutex);
+		dc->availableThreads++;//Se faz a resserva logo
+		pthread_mutex_unlock(&dc->threadCreationMutex);
+		return -2;
+	}
+	return 1;
 }

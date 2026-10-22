@@ -18,7 +18,7 @@
 	#define MAX_THREADS 20
 #endif
 
-#define DESIRED_ARGS 7
+#define DESIRED_ARGS 8
 
 
 int main(int argc, char **argv){
@@ -34,16 +34,18 @@ int main(int argc, char **argv){
 	double cpu;
 	const char* inputDir;
 	size_t localCoresCount;
+	size_t maxThreads;
 	#ifndef _DEBUG //O executavel debug nao pede argumentos para ser mais facil o debug entao este codigo nao acontece se for debug mode
 	if (argc != DESIRED_ARGS) {
-		fprintf(stderr, "Usage: %s <servers> <ram> <disk> <cpus> <input dir> <cores-disponiveis-para-CloudIST>\n", argv[0]);
+		fprintf(stderr, "Usage: %s <servers> <ram> <disk> <cpus> <input dir> <cores-disponiveis-para-CloudIST> <max-threads>\n", argv[0]);
 		return 1;
 	}
 	if (parse_size_t_arg(argv[1], &servers) != 0 ||
 			parse_size_t_arg(argv[2], &ram) != 0 ||
 			parse_size_t_arg(argv[3], &disk) != 0 ||
 			parse_double_arg(argv[4], &cpu) != 0 ||
-			parse_size_t_arg(argv[6], &localCoresCount) != 0) {
+			parse_size_t_arg(argv[6], &localCoresCount) != 0 ||
+			parse_size_t_arg(argv[7], &maxThreads) != 0) {
 		fprintf(stderr, "Invalid command line arguments.\n");
 		return 1;
 	}
@@ -58,6 +60,7 @@ int main(int argc, char **argv){
 		cpu = CPU;
 		inputDir = INPUT_DIR;
 		localCoresCount = LOCAL_CORES_AVAILABLES;
+		maxThreads = MAX_THREADS;
 	#endif
 
 
@@ -65,10 +68,11 @@ int main(int argc, char **argv){
     .ram = ram,
     .disk = disk,
     .cpu = cpu,
-	.inputDir = inputDir,
-		.localCoresCount = localCoresCount
+	.inputDir = inputDir
 	};
-
+	dc.maxThreads = maxThreads;
+	dc.availableThreads = maxThreads;
+	dc.localCoresCount = localCoresCount;
 	if(datacenter_configure(&dc, servers, &resources) != 0){
 		fprintf(stderr, "Failed to configure Data Center.\n");
 		return 1;

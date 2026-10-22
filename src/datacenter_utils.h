@@ -3,6 +3,9 @@
 
 #include "datacenter.h"
 #include "utils/vector.h"
+#include <pthread.h>
+
+
 
 /**
  * Checks if a VMType with the given id exists.
@@ -80,8 +83,20 @@ void reservation_destroy(DataCenter *dc, Reservation *reservation);
  *
  * @param vm Pointer to the VM being spawned.
  */
-void spawn_vm_child(VM *vm,Resources* dataCenterResources, size_t numServers);
+void spawn_vm_child(VM *vm,double localCoresCount, size_t numServers);
 
+/**
+ * @brief Esta função deve ser chamada sempre que seja necessario criar um novo thread para o sistema pois sem ela seria impossivel tomar registo dos threads existentes. Ela automaticamente garante que a criação de um thread resserve um espaço e a sua destruição o liberte
+ * Esta função apenas pode ser chamada pelo thread principal e mais ninguem sffv
+ * @param dc em que sera criado o thread
+ * @param func função do thread
+ * @param tid variavel em que sera armazenada o tid o datacenter criado
+ * @return
+ * Retorna se -2 se falhou a criação do thread
+ * Retorna se -1 se o datacenter nao tem mais thread disponiveis
+ * Retorna 1 se o thread foi criado corretamente
+ */
+int askDataCenterThread(DataCenter* dc,pthread_t* tid,void *(*func) (void *),void* args);
 /**
  * Forks one child per VM in the reservation, calling spawn_vm_child()
  * in each child and recording the pid/state in the parent.
@@ -91,7 +106,7 @@ void spawn_vm_child(VM *vm,Resources* dataCenterResources, size_t numServers);
  * @return 0 on success.
  * @return 1 if directories creation fails.
  */
-int spawn_all_vms(Reservation *res, Resources *resources, size_t numServers);
+int spawn_all_vms(Reservation *res, double localCoresCount, size_t numServers);
 
 /**
  * Blocks until every VM's process has exited, updating each VM's state
