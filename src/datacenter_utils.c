@@ -272,7 +272,6 @@ void spawn_vm_child(VM *vm, double localCoresCount, size_t numServers) {
 	//atualmente todos os servers tem o mesmo cpu
 	int CPULIMIT = 100.0f*vm->type->required.cpu *localCoresCount / (vm->server->total.cpu*numServers);
 	snprintf(limit, sizeof(limit), "%d", (int)(CPULIMIT));
-	CPULIMIT*= 100;
 	execlp("cpulimit", "cpulimit", "-q", "-f", "-l", limit,
 		   "--", vm->type->exec_path, (char *)NULL);
 
