@@ -167,11 +167,7 @@ int datacenter_execute(DataCenter *dc, const char *reservation_id) {
 
   Reservation *res = find_pending_reservation(dc, reservation_id);
   if (!res) return 1;
-  //Apenas existe uma reserva R por cada ficheiro .conf
-  //if (!datacenter_initializeReservationDirectories(res)) {
-  //  fprintf(stderr, "Erro tentando fazer as copias recursivas da resserva: %s.\n",res->id);
-  //  return 1;
-  //}
+
 
   if (spawn_all_vms(res,dc->localCoresCount,dc->num_servers) != 0) return 1;
 

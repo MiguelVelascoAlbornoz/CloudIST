@@ -545,8 +545,11 @@ int askDataCenterThread(DataCenter* dc,pthread_t* tid,void *(*func) (void *),voi
 	}
 	dc->availableThreads--;//Se faz a resserva logo
 	pthread_mutex_unlock(&dc->threadCreationMutex);
-
-	if (pthread_create(tid,NULL,func,NULL) != 0) {
+	ThreadCreationArgs* a = malloc(sizeof(ThreadCreationArgs));
+	a->dc = dc;
+	a->func = func;
+	a->arg = args;
+	if (pthread_create(tid,NULL,threadWrapper,a) != 0) {
 		pthread_mutex_lock(&dc->threadCreationMutex);
 		dc->availableThreads++;//Se faz a resserva logo
 		pthread_mutex_unlock(&dc->threadCreationMutex);
