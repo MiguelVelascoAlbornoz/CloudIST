@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <asm-generic/errno.h>
 #include <linux/limits.h>
 #include "datacenter.h"
 #include "parser.h"
@@ -70,6 +71,7 @@ int main(int argc, char **argv){
     .cpu = cpu,
 	.inputDir = inputDir
 	};
+
 	dc.maxThreads = maxThreads;
 	dc.availableThreads = maxThreads;
 	dc.localCoresCount = localCoresCount;
@@ -79,6 +81,39 @@ int main(int argc, char **argv){
 	}
 
 	process_fd(STDIN_FILENO, &dc);
+
+	//Sistema para mostrar que o thread nao esta "morto"
+	struct timespec deadline;
+	clock_gettime(CLOCK_REALTIME, &deadline);  // deadline = ahora
+	deadline.tv_sec += 2;
+	pthread_mutex_lock(&dc.lock);
+
+	int rc = 0;
+	int dotsCount = 1;
+	while (dc.running_vms > 0) { //Basicamente esperar pelos processos filhos terminarem
+		rc = pthread_cond_timedwait(&dc.cond, &dc.lock, &deadline);
+		//O thread que espera pelos processos filhos terminarem acorda ao thread cada vez que um processo filho termine
+		//Assim esta parte de codigo fica a comrpobar se ja todos os processos filhos terminaram cada vez que algum deles termina.
+
+		if (rc == ETIMEDOUT) {
+			static const char *frames[] = {".", "..", "..."};
+			printf("\rWaiting CloudIST process end%s", frames[dotsCount % 3]);
+			fflush(stdout);
+			dotsCount++;
+
+			clock_gettime(CLOCK_REALTIME, &deadline);
+			deadline.tv_sec += 2;
+		}
+	}
+	fflush(stdout);
+
+	dc.shutting_down = 1;
+	//Uma vez todos os filhos terem terminado o thread de espera pelos processos filhos ficara dormido novamente (por isso deve ser acordado).
+	//Como dc.shuttin_down = 1 esse thread entrar numa condicional que o leva ao seu fim
+	pthread_cond_broadcast(&dc.cond);
+
+	pthread_mutex_unlock(&dc.lock);
+	pthread_join(dc.waitThread, NULL);
 
 	datacenter_destroy(&dc);
 }

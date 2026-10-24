@@ -72,9 +72,9 @@ typedef struct Reservation {
 typedef struct DataCenter {
 	Server *servers;			     // List of Servers.
 	size_t num_servers;              // Number of Servers.
-	pthread_mutex_t lock;     //Protege o estado do datacenter inteiro
+	pthread_mutex_t lock;//Mutex do cond
 	pthread_cond_t  cond;      // sinaliza: há VMs a correr / uma VM terminou
-	pthread_t       reaper;
+	pthread_t       waitThread;
 	size_t          running_vms;
 	int             shutting_down;
 	VMType vm_types[MAX_VM_TYPES];

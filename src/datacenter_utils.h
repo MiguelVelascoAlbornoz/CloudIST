@@ -98,15 +98,16 @@ void spawn_vm_child(VM *vm,double localCoresCount, size_t numServers);
  */
 int askDataCenterThread(DataCenter* dc,pthread_t* tid,void *(*func) (void *),void* args);
 /**
- * Forks one child per VM in the reservation, calling spawn_vm_child()
- * in each child and recording the pid/state in the parent.
+ * @brief Esta função ira tentar criar um processo por cada VM.
+ * Assume-se que o fork nao falha.
+ * Ao falhar a copia recursiva dos ficheiros essa VM é simplesmente ignorada.
+ * Uma vez o fork feito o thread principal desentende-se totalmente desse processo e a sua finalização ou ressultado passa a ser responsabilidade apenas de waitThread
+ * Por estes motivos tecnica mente esta chamada nao pode "falhar"
  *
  * @param res Pointer to the Reservation whose VMs should be spawned.
- *
- * @return 0 on success.
- * @return 1 if directories creation fails.
+ * @return Retorna o numero de processos criados
  */
-int spawn_all_vms(Reservation *res, double localCoresCount, size_t numServers,DataCenter* dc);
+size_t spawn_all_vms(Reservation *res, double localCoresCount, size_t numServers,DataCenter* dc);
 
 /**
  * Blocks until every VM's process has exited, updating each VM's state
@@ -206,5 +207,14 @@ int initializeVmDirectories(VM* vmToInitialize, const char* reservationID);
  */
 void datacenterLoadConfigFiles(DataCenter* dc, Vector* configFiles, const char *inputDir);
 
-void waitingThread();
+void* waitingThread(void* args);
+
+/**
+ * @brief Esta chamada nao altera nenhuma variavel de DC.
+ * @param dc Datacnter do qual se pretende encontrar a informação
+ * @param pid pid do processo cuja vm esta-se a procurar
+ * @param reservation Direção de memoria na qual se pretende eventualmente obter a direção de memoria da reservation a qual esta vm corresponde
+ * @param vm Direção de memoria na qual se pretende obter a direção de memoria da vm que criou o processo com o PID dado
+ */
+void getDatacenterInfoFromPID(DataCenter *dc, pid_t pid,Reservation** reservation, VM** vm);
 #endif // DATACENTER_UTILS__H

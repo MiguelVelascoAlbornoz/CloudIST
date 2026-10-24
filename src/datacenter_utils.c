@@ -226,7 +226,9 @@ void reservation_destroy(DataCenter *dc, Reservation *reservation) {
 				break;
 			}
 		}
-		removeDir(vm->path);
+		if (!removeDir(vm->path)) {
+			fprintf(stderr, "Failed to remove directory \"%s\" during reservation with id \"%s\" destroy. \n", vm->path,reservation->id);
+		}
 		free(vm);
 		reservation->vms[i] = NULL;
 	}
@@ -277,7 +279,8 @@ void spawn_vm_child(VM *vm, double localCoresCount, size_t numServers) {
 
 }
 
-int spawn_all_vms(Reservation *res,double localCoresCount, size_t numServers,DataCenter* dc) {
+size_t spawn_all_vms(Reservation *res,double localCoresCount, size_t numServers,DataCenter* dc) {
+	size_t count = 0;
 	for (size_t i = 0; i < res->num_vms; i++) {
 		VM *vm = res->vms[i];
 		if (!initializeVmDirectories(vm,res->id))
@@ -295,16 +298,16 @@ int spawn_all_vms(Reservation *res,double localCoresCount, size_t numServers,Dat
 			_exit(127);
 		} else
 		{
+			count++;
 			vm->pid = pid;
 			vm->state = VM_STATE_RUNNING;
 			res->running_vms++;
 			dc->running_vms++;
-			pthread_cond_broadcast(&dc->cond);
+			pthread_cond_broadcast(&dc->cond); //Thread de espera deve ser acordado imediato
 		}
 
 	}
-
-	return 0;
+	return count;
 }
 
 void wait_for_all_vms(Reservation *res) {
@@ -559,6 +562,63 @@ int askDataCenterThread(DataCenter* dc,pthread_t* tid,void *(*func) (void *),voi
 	}
 	return 1;
 }
-void waitingThread() {
+void* waitingThread(void* arg) {
+	DataCenter *dc = arg;
+	while (1) { //Unicamente para quando o datacenter finalizar
+		//Dormir o thread
+		pthread_mutex_lock(&dc->lock);
+		while (dc->running_vms == 0 && !dc->shutting_down) pthread_cond_wait(&dc->cond, &dc->lock); //Unicamente vai ser acordado durante a criação de um processo de uma VM OU na finalização do thread principal
 
+		//Caso em que o thread principal anuncia o fim da execução
+		if (dc->running_vms == 0 && dc->shutting_down) {
+			pthread_mutex_unlock(&dc->lock);
+			return NULL;
+		}
+		pthread_mutex_unlock(&dc->lock);
+		//esta parte do cdigo apenas acontece se existe pelo menos 1 vm em execução pelo que ficamos em modo espera de esse processo
+		int status;
+		pid_t pid = wait(&status);
+		//Existe uma condição pela qual este wait pode parar sem nenhuma VM ter terminado o seu processo
+		//	Quando existe uma chamada a removeDir este wait poderia chegar a acordar no fim dessa chamada
+		//	De momento o unico problmea que isso pode causar é um falso sinal de erro na propia chamada de removeDir
+		if (pid < 0) {
+			if (errno != EINTR) usleep(1000);     // evita busy loop
+			continue;
+		}
+		//Obter a vm e a reservação
+		Reservation* reservation;
+		VM* vm;
+		getDatacenterInfoFromPID(dc,pid,&reservation,&vm);
+		if (vm ==NULL || reservation == NULL) {
+			//Neste caso wait recebeu o fim de um processo que nao corresponde ao de nenhuma VM pelo que simplesmente volta-se ao inicio do while
+			continue;
+		}
+		if (!WIFEXITED(status)) {
+			fprintf(stderr, "Reservation with id: %s\nVM with id: %s\nEnded with exit code: %d\n", reservation->id,vm->id,WEXITSTATUS(status));
+		}
+		pthread_mutex_lock(&dc->lock);
+		vm->state = VM_STATE_TERMINATED;
+		dc->running_vms--;
+		reservation->running_vms--;
+		if (reservation->running_vms <= 0) {
+			reservation->state = RES_STATE_FINISHED;
+			reservation_destroy(dc, reservation);   // invalida 'res'; não o uses depois
+		}
+		pthread_cond_broadcast(&dc->cond); //Notificar ao thread principal que um processo de uma VM terminou
+		pthread_mutex_unlock(&dc->lock);
+	}
+}
+void getDatacenterInfoFromPID(DataCenter *dc, pid_t pid,Reservation** reservation, VM** vm) {
+	for (size_t i = 0; i < dc->num_reservations; i++) {
+		Reservation *res = &dc->reservations[i];
+		for (size_t j = 0; j < res->num_vms; j++) {
+			VM *vmL = res->vms[j];
+			if (vmL->pid == pid) {
+				*vm =vmL;
+				*reservation = res;
+			}
+		}
+	}
+	vm = NULL;
+	reservation = NULL;
 }

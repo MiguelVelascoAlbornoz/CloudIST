@@ -30,6 +30,8 @@ void datacenter_init(DataCenter *dc) {
 
 void datacenter_destroy(DataCenter *dc) {
   pthread_mutex_destroy(&dc->threadCreationMutex);
+  pthread_mutex_destroy(&dc->lock);
+  pthread_cond_destroy(&dc->cond);
   if (path_exists(TMP_FILES_PATH))
   {
     if (!removeDir(TMP_FILES_PATH))
@@ -47,6 +49,9 @@ void datacenter_destroy(DataCenter *dc) {
 
 
 int datacenter_configure(DataCenter *dc, size_t num_servers, Resources *resources){
+
+
+
   if(dc->configured){
     fprintf(stderr, "Data Center is already configured!\n");
     return 1;
@@ -69,6 +74,9 @@ int datacenter_configure(DataCenter *dc, size_t num_servers, Resources *resource
     fprintf(stderr, "Failed to allocate memory for servers.\n");
     return 1;
   }
+  pthread_mutex_init(&dc->threadCreationMutex, NULL);
+  pthread_mutex_init(&dc->lock,NULL);
+  pthread_cond_init(&dc->cond,NULL);
   Vector configFiles;//Deve conter os nomes dos ficheiros .config no diretorio especificado ordenados em ordem alfabetica
   if (!list_config_files(resources->inputDir,&configFiles))
   {
@@ -93,9 +101,16 @@ int datacenter_configure(DataCenter *dc, size_t num_servers, Resources *resource
     dc->servers[i].available = *resources;
     dc->servers[i].num_hosted_vms = 0;
   }
-  pthread_mutex_init(&dc->threadCreationMutex, NULL);
+
+
   dc->num_servers = num_servers;
   dc->configured = 1;
+
+  if (askDataCenterThread(dc,&dc->waitThread,waitingThread,dc) <= 0) {
+    fprintf(stderr, "Falhou a criação de um thread necessario para a execução d eum programa\n");
+    datacenter_destroy(dc);
+    destroyVector(&configFiles);
+  }
 
   datacenterLoadConfigFiles(dc,&configFiles,resources->inputDir);
   destroyVector(&configFiles);
@@ -169,7 +184,7 @@ int datacenter_execute(DataCenter *dc, const char *reservation_id) {
   if (!res) return 1;
 
 
-  if (spawn_all_vms(res,dc->localCoresCount,dc->num_servers) != 0) return 1;
+  if (spawn_all_vms(res,dc->localCoresCount,dc->num_servers,dc) != 0) return 1;
 
   res->state = RES_STATE_RUNNING;
 
