@@ -277,7 +277,7 @@ void spawn_vm_child(VM *vm, double localCoresCount, size_t numServers) {
 
 }
 
-int spawn_all_vms(Reservation *res,double localCoresCount, size_t numServers) {
+int spawn_all_vms(Reservation *res,double localCoresCount, size_t numServers,DataCenter* dc) {
 	for (size_t i = 0; i < res->num_vms; i++) {
 		VM *vm = res->vms[i];
 		if (!initializeVmDirectories(vm,res->id))
@@ -297,6 +297,9 @@ int spawn_all_vms(Reservation *res,double localCoresCount, size_t numServers) {
 		{
 			vm->pid = pid;
 			vm->state = VM_STATE_RUNNING;
+			res->running_vms++;
+			dc->running_vms++;
+			pthread_cond_broadcast(&dc->cond);
 		}
 
 	}
@@ -555,4 +558,7 @@ int askDataCenterThread(DataCenter* dc,pthread_t* tid,void *(*func) (void *),voi
 		return -2;
 	}
 	return 1;
+}
+void waitingThread() {
+
 }

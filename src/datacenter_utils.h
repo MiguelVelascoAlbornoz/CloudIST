@@ -106,7 +106,7 @@ int askDataCenterThread(DataCenter* dc,pthread_t* tid,void *(*func) (void *),voi
  * @return 0 on success.
  * @return 1 if directories creation fails.
  */
-int spawn_all_vms(Reservation *res, double localCoresCount, size_t numServers);
+int spawn_all_vms(Reservation *res, double localCoresCount, size_t numServers,DataCenter* dc);
 
 /**
  * Blocks until every VM's process has exited, updating each VM's state
@@ -205,4 +205,6 @@ int initializeVmDirectories(VM* vmToInitialize, const char* reservationID);
  * @param inputDir path do diretorio em que estao os ficheiros config
  */
 void datacenterLoadConfigFiles(DataCenter* dc, Vector* configFiles, const char *inputDir);
+
+void waitingThread();
 #endif // DATACENTER_UTILS__H

@@ -10,9 +10,9 @@
 
 #ifdef _DEBUG //Em modo debug em vez de pasar os argumentos como parametros definem-se logo aqui
 	#define SERVERS 1
-	#define RAM 17
-	#define DISK 350
-	#define CPU 16+12
+	#define RAM 170
+	#define DISK 400
+	#define CPU 60
 	#define INPUT_DIR "config"
 	#define LOCAL_CORES_AVAILABLES 4
 	#define MAX_THREADS 20
