@@ -21,7 +21,8 @@ typedef struct VMType{
 typedef enum {
   VM_STATE_RESERVED,   // placed on a Server, process not started yet (waiting for 'A' command)
   VM_STATE_RUNNING,    // process launched (fork()/exec() called), `pid` is valid
-  VM_STATE_TERMINATED  // wait() called, process finished
+  VM_STATE_TERMINATED,  // wait() called, process finished
+  VM_STATE_INIT_FAILED
 } VMState;
 
 typedef struct Server Server;

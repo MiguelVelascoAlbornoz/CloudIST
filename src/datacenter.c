@@ -110,6 +110,7 @@ int datacenter_configure(DataCenter *dc, size_t num_servers, Resources *resource
     fprintf(stderr, "Falhou a criação de um thread necessario para a execução d eum programa\n");
     datacenter_destroy(dc);
     destroyVector(&configFiles);
+    return 1;
   }
 
   datacenterLoadConfigFiles(dc,&configFiles,resources->inputDir);
@@ -184,15 +185,13 @@ int datacenter_execute(DataCenter *dc, const char *reservation_id) {
   if (!res) return 1;
 
 
-  if (spawn_all_vms(res,dc->localCoresCount,dc->num_servers,dc) != 0) return 1;
-
-  res->state = RES_STATE_RUNNING;
-
-  wait_for_all_vms(res);
-
-  res->state = RES_STATE_FINISHED;
-
-  reservation_destroy(dc, res);
+  int count = spawn_all_vms(res,dc->localCoresCount,dc->num_servers,dc);
+  printf("Reservation id %s executed with %d vms\n", res->id, count);
+  if (count > 0) {
+    res->state = RES_STATE_RUNNING;
+  } else {
+    res->state = RES_STATE_FINISHED;
+   }
 
   return 0;
 }

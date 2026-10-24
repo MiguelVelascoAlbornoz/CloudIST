@@ -226,7 +226,7 @@ void reservation_destroy(DataCenter *dc, Reservation *reservation) {
 				break;
 			}
 		}
-		if (!removeDir(vm->path)) {
+		if (*vm->path!= '\0' && !removeDir(vm->path)) {
 			fprintf(stderr, "Failed to remove directory \"%s\" during reservation with id \"%s\" destroy. \n", vm->path,reservation->id);
 		}
 		free(vm);
@@ -285,6 +285,7 @@ size_t spawn_all_vms(Reservation *res,double localCoresCount, size_t numServers,
 		VM *vm = res->vms[i];
 		if (!initializeVmDirectories(vm,res->id))
 		{
+			vm->state = VM_STATE_INIT_FAILED;
 			fprintf(stderr, "Failed to initialize directories of VM: \"%s\" .\n",vm->id);
 			continue;
 		}
@@ -304,24 +305,22 @@ size_t spawn_all_vms(Reservation *res,double localCoresCount, size_t numServers,
 			res->running_vms++;
 			dc->running_vms++;
 			pthread_cond_broadcast(&dc->cond); //Thread de espera deve ser acordado imediato
+			#ifdef _DEBUG
+			printf("VM with id %s running.\n",vm->id);
+			#endif
 		}
 
 	}
 	return count;
 }
 
-void wait_for_all_vms(Reservation *res) {
-	for (size_t i = 0; i < res->num_vms; i++) {
-		//TODO: IMPLEMENT WAITING FOR VM
-		res->vms[i]->state = VM_STATE_TERMINATED;
-	}
-}
 
 const char *vm_state_to_string(VMState state) {
     switch (state) {
         case VM_STATE_RESERVED:   return "RESERVED";
         case VM_STATE_RUNNING:    return "RUNNING";
         case VM_STATE_TERMINATED: return "TERMINATED";
+    	case VM_STATE_INIT_FAILED: return "INIT_FAILED";
         default:                  return "UNKNOWN";
     }
 }
@@ -358,24 +357,28 @@ int process_command(int fd, DataCenter *dc)
 {
 	switch (get_next_command(fd)){
 			case CMD_DEFINE: {
+
 				VMType vmtype;
 
 				if (parse_define(fd, &vmtype) != 0) {
 					fprintf(stderr, "Invalid define command. See H (help) for usage.\n");
 					break;
 				}
-
+				pthread_mutex_lock(&dc->lock);
 				if(datacenter_define_VM(dc, &vmtype) != 0){
 					fprintf(stderr, "Failed to define VM.\n");
+					pthread_mutex_unlock(&dc->lock);
 					break;
 				}
 
 				printf("VM successfully defined!\n");
-
+				pthread_mutex_unlock(&dc->lock);
 				break;
+
 			}
 
 			case CMD_RESERVE: {
+				pthread_mutex_lock(&dc->lock);
 				Reservation reservation = {0};
 
 				size_t num_items = parse_reserve(fd, &reservation, MAX_RESERVATIONS_ITEMS);
@@ -384,12 +387,13 @@ int process_command(int fd, DataCenter *dc)
 					fprintf(stderr, "Invalid reserve command. See H (help) for usage.\n");
 					break;
 				}
-
+				pthread_mutex_lock(&dc->lock);
 				if (datacenter_reserve(dc, &reservation) != 0) {
 					fprintf(stderr, "Failed to reserve VMs.\n");
+					pthread_mutex_unlock(&dc->lock);
 					break;
 				}
-
+				pthread_mutex_unlock(&dc->lock);
 				printf("Reservation made successfully!\n");
 
 				break;
@@ -402,20 +406,23 @@ int process_command(int fd, DataCenter *dc)
 					fprintf(stderr, "Invalid execute command. See H (help) for usage.\n");
 					break;
 				}
-
+			pthread_mutex_lock(&dc->lock);
 				if (datacenter_execute(dc, id) != 0) {
 					fprintf(stderr, "Failed to execute reservation.\n");
+					pthread_mutex_unlock(&dc->lock);
 					break;
 				}
-
+			pthread_mutex_unlock(&dc->lock);
 				printf("Finished reservation execution!\n");
 
 				break;
 
 			case CMD_LIST:
+			pthread_mutex_lock(&dc->lock);
 				if (datacenter_list(dc) != 0) {
 					fprintf(stderr, "Failed to list VMs.\n");
 				}
+			pthread_mutex_unlock(&dc->lock);
 				break;
 
 			case CMD_WAIT:
@@ -477,6 +484,7 @@ int initializeVmDirectories(VM *vmInReservation, const char* reservationID)
 	if (n < 0 || (size_t)n >= MAX_PATH_SIZE) {
 		//PATH a junção forma um nome demasiado longo
 		fprintf(stderr, "Nomes das resservas demasiado longos como para criar um path.\n");
+		*path = '\0';
 		return 0;
 	}
 	//Pode -se fazer agora  acopia recursiva
@@ -585,6 +593,8 @@ void* waitingThread(void* arg) {
 			if (errno != EINTR) usleep(1000);     // evita busy loop
 			continue;
 		}
+		//Temos de garantir que as reservações nao estão a mudar
+		pthread_mutex_lock(&dc->lock);
 		//Obter a vm e a reservação
 		Reservation* reservation;
 		VM* vm;
@@ -596,7 +606,6 @@ void* waitingThread(void* arg) {
 		if (!WIFEXITED(status)) {
 			fprintf(stderr, "Reservation with id: %s\nVM with id: %s\nEnded with exit code: %d\n", reservation->id,vm->id,WEXITSTATUS(status));
 		}
-		pthread_mutex_lock(&dc->lock);
 		vm->state = VM_STATE_TERMINATED;
 		dc->running_vms--;
 		reservation->running_vms--;
@@ -609,6 +618,8 @@ void* waitingThread(void* arg) {
 	}
 }
 void getDatacenterInfoFromPID(DataCenter *dc, pid_t pid,Reservation** reservation, VM** vm) {
+	*vm = NULL;
+	*reservation = NULL;
 	for (size_t i = 0; i < dc->num_reservations; i++) {
 		Reservation *res = &dc->reservations[i];
 		for (size_t j = 0; j < res->num_vms; j++) {
@@ -619,6 +630,5 @@ void getDatacenterInfoFromPID(DataCenter *dc, pid_t pid,Reservation** reservatio
 			}
 		}
 	}
-	vm = NULL;
-	reservation = NULL;
+
 }

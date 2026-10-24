@@ -97,7 +97,7 @@ int main(int argc, char **argv){
 
 		if (rc == ETIMEDOUT) {
 			static const char *frames[] = {".", "..", "..."};
-			printf("\rWaiting CloudIST process end%s", frames[dotsCount % 3]);
+			printf("\rWaiting CloudIST process end%s\n", frames[dotsCount % 3]);
 			fflush(stdout);
 			dotsCount++;
 
