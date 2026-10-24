@@ -87,10 +87,10 @@ int copiaFicheiro(const char* srcFile, const char* dstFile) {
     return 0;
   }
   int ok = 1;
-  static char buffer[FILE_COPY_CHUNK_SIZE]; //static pois estar a inicializar esta memoria por cada chama-da a função é um desperdiço de recursos
+  char buffer[FILE_COPY_CHUNK_SIZE]; //static pois estar a inicializar esta memoria por cada chama-da a função é um desperdiço de recursos
   while (ok) {
     //Escrevem se n bytes no buffer e verificar-se se forem 0, acabou se de ler o ficheiro, se der menor a 0 houver erro e senão continua-se com a escrita desses bytes no ficheiro de destino
-    int nRead = read(srcFD, buffer, FILE_COPY_CHUNK_SIZE);
+    ssize_t nRead = read(srcFD, buffer, FILE_COPY_CHUNK_SIZE);
     if (nRead == 0) break; // Fim do ficheiro
     if (nRead <0) {
       if (errno == EINTR) continue;
@@ -103,7 +103,7 @@ int copiaFicheiro(const char* srcFile, const char* dstFile) {
     //assim volta-se a repetir o write ate der erro ou o numero de bytes por escrever for 0
     char *p = buffer;
     while (nRead > 0) {
-      ssize_t nWritten = write(dstFD, p, nRead);
+      ssize_t nWritten = write(dstFD, p, (size_t)nRead);
       if (nWritten < 0) {
         if (errno == EINTR) continue;
         fprintf(stderr, "Error writing file %s: %s\n", dstFile, strerror(errno));

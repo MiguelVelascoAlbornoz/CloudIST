@@ -18,7 +18,8 @@
 void datacenter_init(DataCenter *dc) {
   dc->servers = NULL;
   dc->num_servers = 0;
-
+  dc->running_vms = 0;
+  dc->availableThreads = 0;
   dc->num_vm_types = 0;
 
   dc->num_reservations = 0;
@@ -185,8 +186,8 @@ int datacenter_execute(DataCenter *dc, const char *reservation_id) {
   if (!res) return 1;
 
 
-  int count = spawn_all_vms(res,dc->localCoresCount,dc->num_servers,dc);
-  printf("Reservation id %s executed with %d vms\n", res->id, count);
+  size_t count = spawn_all_vms(res,dc->localCoresCount,dc->num_servers,dc);
+  printf("Reservation id %s executed with %ld vms\n", res->id, count);
   if (count > 0) {
     res->state = RES_STATE_RUNNING;
   } else {

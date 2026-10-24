@@ -80,7 +80,7 @@ typedef struct DataCenter {
 	int             shutting_down;
 	VMType vm_types[MAX_VM_TYPES];
     size_t num_vm_types;
-	size_t localCoresCount;
+	double localCoresCount;
 	size_t maxThreads;
 	size_t availableThreads;
 	Reservation reservations[MAX_RESERVATIONS];

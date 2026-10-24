@@ -258,15 +258,11 @@ void reservation_destroy(DataCenter *dc, Reservation *reservation) {
 	dc->num_reservations--;
 }
 
-void spawn_vm_child(VM *vm, double localCoresCount, size_t numServers) {
+void spawn_vm_child(VM *vm, double localCoresCount, size_t numServers, const char* executionPath) {
 	(void)vm;
+
 	struct rlimit lim;
-	char execAbs[MAX_PATH_SIZE];
-	if (absolute_path(vm->path, execAbs, sizeof(execAbs)) != 0) {
-		fprintf(stderr, "Cannot resolve executable path of VM %s.\n", vm->id);
-		_exit(126);
-	}
-	if (chdir(vm->path) != 0) _exit(126);
+	if (chdir(executionPath) != 0) _exit(126);
 	lim.rlim_cur = lim.rlim_max = (rlim_t)vm->type->required.ram << 30;
 	if (setrlimit(RLIMIT_AS, &lim)) _exit(126);
 
@@ -276,7 +272,7 @@ void spawn_vm_child(VM *vm, double localCoresCount, size_t numServers) {
 
 	char limit[32]; //Transforma
 	//atualmente todos os servers tem o mesmo cpu
-	int CPULIMIT = 100.0f*vm->type->required.cpu *localCoresCount / (vm->server->total.cpu*numServers);
+	int CPULIMIT = (int)((double)100.0f*vm->type->required.cpu *localCoresCount / (vm->server->total.cpu*(double)numServers));
 	snprintf(limit, sizeof(limit), "%d", (int)(CPULIMIT));
 	execlp("cpulimit", "cpulimit", "-q", "-f", "-l", limit,
 		   "--", vm->type->exec_path, (char *)NULL);
@@ -293,13 +289,19 @@ size_t spawn_all_vms(Reservation *res,double localCoresCount, size_t numServers,
 			fprintf(stderr, "Failed to initialize directories of VM: \"%s\" .\n",vm->id);
 			continue;
 		}
+
+		char execAbs[MAX_PATH_SIZE];
+		if (absolute_path(vm->path, execAbs, sizeof(execAbs)) != 0) {
+			fprintf(stderr, "Cannot resolve executable path of VM %s.\n", vm->id);
+			_exit(126);
+		}
 		pid_t pid = fork();
 		if (pid < 0)
 		{
 			//Assume-se que o fork nao falha
 		} else if (pid == 0)
 		{
-			spawn_vm_child(vm,localCoresCount, numServers);
+			spawn_vm_child(vm,localCoresCount, numServers,execAbs);
 			_exit(127);
 		} else
 		{
@@ -502,14 +504,40 @@ int initializeVmDirectories(VM *vmInReservation, const char* reservationID)
 }
 void datacenterLoadConfigFiles(DataCenter* dc, Vector* configFiles, const char *inputDir)
 {
-	for (size_t i = 0; i < configFiles->size; ++i)
-	{
-		ConfigLoaderArgs* args =  malloc(sizeof(ConfigLoaderArgs));
-		args->dc = dc;
-		args->inputDir = inputDir;
-		args->name = (char*)getAtVector(configFiles,i);
-		askDataCenterThread(dc,configLoaderThread,args);
+	size_t n = configFiles->size;
+	if (n == 0) return;
+
+	pthread_t *tids = malloc(n * sizeof(*tids)); //Lista de tids para esperar apos ter mandado ler os config files
+	ConfigLoaderArgs *args = malloc(n * sizeof(*args)); //Argumentos de cada thread criado
+	int *started = calloc(n, sizeof(*started));
+	if (!tids || !args || !started) {
+		fprintf(stderr, "Sem memoria para poder carregar os config files.\n");
+		free(tids); free(args); free(started);
+		return;
 	}
+
+	for (size_t i = 0; i < n; i++) {
+		args[i].dc = dc;
+		args[i].inputDir = inputDir;
+		args[i].name = (char*)getAtVector(configFiles, i);
+
+		if (askDataCenterThread(dc, &tids[i], configLoaderThread, &args[i]) > 0) {
+			started[i] = 1;
+		} else {
+			configLoaderThread(&args[i]); //Quando por algum motivo não é possivel chamar a criação de um thread o thread principal ajuda na leitura dos ficheiros
+		}
+	}
+	//Esperar cada thread
+	for (size_t i = 0; i < n; i++)
+	{
+		if (started[i])
+		{
+			pthread_join(tids[i], NULL);
+		}
+	}
+
+
+	free(tids); free(args); free(started);
 
 }
 typedef struct {
@@ -584,7 +612,7 @@ void* waitingThread(void* arg) {
 		//	Quando existe uma chamada a removeDir este wait poderia chegar a acordar no fim dessa chamada
 		//	De momento o unico problmea que isso pode causar é um falso sinal de erro na propia chamada de removeDir
 		if (pid < 0) {
-			if (errno != EINTR) usleep(1000);     // evita busy loop
+			if (errno != EINTR) sleep(1000);     // evita busy loop
 			continue;
 		}
 		//Temos de garantir que as reservações nao estão a mudar
@@ -630,20 +658,22 @@ void getDatacenterInfoFromPID(DataCenter *dc, pid_t pid,Reservation** reservatio
 
 void* configLoaderThread(void* args)
 {
+	ConfigLoaderArgs* configArgs = args;
 	//Criação do path completo
 	char configFilePath[PATH_MAX];
-	if (snprintf(configFilePath, sizeof(configFilePath), "%s/%s",inputDir, (char*)getAtVector(configFiles,i)) >= (int)sizeof(configFilePath)) {
-		fprintf(stderr, "Path too long in %s\n",    inputDir);
-		return NULL
+	if (snprintf(configFilePath, sizeof(configFilePath), "%s/%s",configArgs->inputDir, configArgs->name) >= (int)sizeof(configFilePath)) {
+		fprintf(stderr, "Path too long in %s\n",    configArgs->inputDir);
+		return NULL;
 	}
 	//Verificar que é um ficheiro e nao um diretorio
-	if (!file_exists(configFilePath)) continue;
+	if (!file_exists(configFilePath)) return NULL;
 	int configFD = open(configFilePath, O_RDONLY);
 	if (configFD < 0) {
 		fprintf(stderr, "Error opening file %s: %s\n", configFilePath, strerror(errno));
-		continue;
+		return NULL;
 	}
 	//Uma vez o file descriptor obtido agora é so usra as funções par ler comandos que ja existem
-	process_fd(configFD,dc);
+	process_fd(configFD,configArgs->dc);
 	close(configFD);
+	return NULL;
 }

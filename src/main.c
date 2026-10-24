@@ -34,7 +34,7 @@ int main(int argc, char **argv){
 	size_t disk;
 	double cpu;
 	const char* inputDir;
-	size_t localCoresCount;
+	double localCoresCount;
 	size_t maxThreads;
 	#ifndef _DEBUG //O executavel debug nao pede argumentos para ser mais facil o debug entao este codigo nao acontece se for debug mode
 	if (argc != DESIRED_ARGS) {
@@ -45,7 +45,7 @@ int main(int argc, char **argv){
 			parse_size_t_arg(argv[2], &ram) != 0 ||
 			parse_size_t_arg(argv[3], &disk) != 0 ||
 			parse_double_arg(argv[4], &cpu) != 0 ||
-			parse_size_t_arg(argv[6], &localCoresCount) != 0 ||
+			parse_double_arg(argv[6], &localCoresCount) != 0 ||
 			parse_size_t_arg(argv[7], &maxThreads) != 0) {
 		fprintf(stderr, "Invalid command line arguments.\n");
 		return 1;
