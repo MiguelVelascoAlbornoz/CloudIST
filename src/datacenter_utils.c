@@ -206,6 +206,12 @@ Reservation *find_pending_reservation(DataCenter *dc, const char *reservation_id
 
 void reservation_destroy(DataCenter *dc, Reservation *reservation) {
 	// Free every VM belonging to the reservation.
+	char resPath[MAX_PATH_SIZE];
+	int n = snprintf(resPath, sizeof(resPath), "%s%s", TMP_FILES_PATH, reservation->id);
+	if (n > 0 && (size_t)n < sizeof(resPath) && path_exists(resPath)) {
+		if (!removeDir(resPath))
+			fprintf(stderr, "Failed to remove directory \"%s\".\n", resPath);
+	}
 	for (size_t i = 0; i < reservation->num_vms; i++) {
 		VM *vm = reservation->vms[i];
 
@@ -226,9 +232,7 @@ void reservation_destroy(DataCenter *dc, Reservation *reservation) {
 				break;
 			}
 		}
-		if (*vm->path!= '\0' && !removeDir(vm->path)) {
-			fprintf(stderr, "Failed to remove directory \"%s\" during reservation with id \"%s\" destroy. \n", vm->path,reservation->id);
-		}
+
 		free(vm);
 		reservation->vms[i] = NULL;
 	}
@@ -355,7 +359,9 @@ int insertEntryInVectorCallback(const char* entryName, void* context) {
 
 int process_command(int fd, DataCenter *dc)
 {
+
 	switch (get_next_command(fd)){
+
 			case CMD_DEFINE: {
 
 				VMType vmtype;
@@ -378,7 +384,6 @@ int process_command(int fd, DataCenter *dc)
 			}
 
 			case CMD_RESERVE: {
-				pthread_mutex_lock(&dc->lock);
 				Reservation reservation = {0};
 
 				size_t num_items = parse_reserve(fd, &reservation, MAX_RESERVATIONS_ITEMS);
@@ -499,22 +504,11 @@ void datacenterLoadConfigFiles(DataCenter* dc, Vector* configFiles, const char *
 {
 	for (size_t i = 0; i < configFiles->size; ++i)
 	{
-		//Criação do path completo
-		char configFilePath[PATH_MAX];
-		if (snprintf(configFilePath, sizeof(configFilePath), "%s/%s",inputDir, (char*)getAtVector(configFiles,i)) >= (int)sizeof(configFilePath)) {
-			fprintf(stderr, "Path too long in %s\n",    inputDir);
-			continue;
-		}
-		//Verificar que é um ficheiro e nao um diretorio
-		if (!file_exists(configFilePath)) continue;
-		int configFD = open(configFilePath, O_RDONLY);
-		if (configFD < 0) {
-			fprintf(stderr, "Error opening file %s: %s\n", configFilePath, strerror(errno));
-			continue;
-		}
-		//Uma vez o file descriptor obtido agora é so usra as funções par ler comandos que ja existem
-		process_fd(configFD,dc);
-		close(configFD);
+		ConfigLoaderArgs* args =  malloc(sizeof(ConfigLoaderArgs));
+		args->dc = dc;
+		args->inputDir = inputDir;
+		args->name = (char*)getAtVector(configFiles,i);
+		askDataCenterThread(dc,configLoaderThread,args);
 	}
 
 }
@@ -601,6 +595,7 @@ void* waitingThread(void* arg) {
 		getDatacenterInfoFromPID(dc,pid,&reservation,&vm);
 		if (vm ==NULL || reservation == NULL) {
 			//Neste caso wait recebeu o fim de um processo que nao corresponde ao de nenhuma VM pelo que simplesmente volta-se ao inicio do while
+			pthread_mutex_unlock(&dc->lock);
 			continue;
 		}
 		if (!WIFEXITED(status)) {
@@ -631,4 +626,24 @@ void getDatacenterInfoFromPID(DataCenter *dc, pid_t pid,Reservation** reservatio
 		}
 	}
 
+}
+
+void* configLoaderThread(void* args)
+{
+	//Criação do path completo
+	char configFilePath[PATH_MAX];
+	if (snprintf(configFilePath, sizeof(configFilePath), "%s/%s",inputDir, (char*)getAtVector(configFiles,i)) >= (int)sizeof(configFilePath)) {
+		fprintf(stderr, "Path too long in %s\n",    inputDir);
+		return NULL
+	}
+	//Verificar que é um ficheiro e nao um diretorio
+	if (!file_exists(configFilePath)) continue;
+	int configFD = open(configFilePath, O_RDONLY);
+	if (configFD < 0) {
+		fprintf(stderr, "Error opening file %s: %s\n", configFilePath, strerror(errno));
+		continue;
+	}
+	//Uma vez o file descriptor obtido agora é so usra as funções par ler comandos que ja existem
+	process_fd(configFD,dc);
+	close(configFD);
 }

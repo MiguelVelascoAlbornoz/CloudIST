@@ -6,6 +6,7 @@
 build/*
 build\*
 *.out
-input/
+input/*
+input\*
 # Executable 
 cloudIST

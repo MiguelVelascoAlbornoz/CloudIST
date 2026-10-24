@@ -1,9 +1,9 @@
 <toolSet name="External Tools">
   <tool name="PyBuildDebug" showInMainMenu="false" showInEditor="false" showInProject="false" showInSearchPopup="false" disabled="false" useConsole="true" showConsoleOnStdOut="false" showConsoleOnStdErr="false" synchronizeAfterRun="true">
     <exec>
-      <option name="COMMAND" value="python3" />
-      <option name="PARAMETERS" value="launch.py debug" />
-      <option name="WORKING_DIRECTORY" value="$ProjectFileDir$" />
+      <option name="COMMAND" value="C:\Windows\System32\wsl.exe" />
+      <option name="PARAMETERS" value="-d Ubuntu-24.04 --cd  \\wsl.localhost\Ubuntu-24.04\home\migue\SO\CloudIST python3 launch.py debug" />
+      <option name="WORKING_DIRECTORY" value="//wsl.localhost/Ubuntu-24.04/home/migue/SO/CloudIST" />
     </exec>
   </tool>
   <tool name="PyBuildRelease" showInMainMenu="false" showInEditor="false" showInProject="false" showInSearchPopup="false" disabled="false" useConsole="true" showConsoleOnStdOut="false" showConsoleOnStdErr="false" synchronizeAfterRun="true">

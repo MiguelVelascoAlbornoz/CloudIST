@@ -87,7 +87,6 @@ int main(int argc, char **argv){
 	clock_gettime(CLOCK_REALTIME, &deadline);  // deadline = ahora
 	deadline.tv_sec += 2;
 	pthread_mutex_lock(&dc.lock);
-
 	int rc = 0;
 	int dotsCount = 1;
 	while (dc.running_vms > 0) { //Basicamente esperar pelos processos filhos terminarem

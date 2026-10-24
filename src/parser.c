@@ -308,12 +308,12 @@ Command get_next_command(int fd){
   if (read(fd, &ch, 1) != 1) {
     return EOC;
   }
-#ifdef _DEBUG
+  #ifdef _DEBUG
   if (ch == 'Q')
   {
     return EOC;
   }
-#endif
+  #endif
 
   if (ch == '#') {
     cleanup(fd, ch);

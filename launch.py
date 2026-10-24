@@ -77,7 +77,9 @@ flags = {
         "-Wextra",
         "-Werror",
         "-Wno-unused-result",
-    ]
+    ],
+    "asan": ["-g", "-O1", "-fsanitize=address,undefined", "-fno-omit-frame-pointer"],
+    "tsan": ["-g", "-O1", "-fsanitize=thread"]
 }
 verifyArguments(compilationMode, flags)
 includeDirs = ["-Iexternal/includes"] #Lista de dirs a incluir, cada dir tem de ser precedido por -I    
@@ -85,6 +87,8 @@ libsDirs = ["-Lexternal/libs"] #Lista de dirs de libs, cada dir tem de ser prece
 libs = {
     "debug": [],
     "release": [],
+    "asan": [],
+    "tsan": [],
     "all": ["-lm"]
 }
 #Configurações de paths, extensões, libs e flags

@@ -217,4 +217,12 @@ void* waitingThread(void* args);
  * @param vm Direção de memoria na qual se pretende obter a direção de memoria da vm que criou o processo com o PID dado
  */
 void getDatacenterInfoFromPID(DataCenter *dc, pid_t pid,Reservation** reservation, VM** vm);
+
+typedef struct ConfigLoaderArgs
+{
+    const char *inputDir;
+    DataCenter *dc;
+    const char* name;
+} ConfigLoaderArgs;
+void* configLoaderThread(void* args);
 #endif // DATACENTER_UTILS__H
