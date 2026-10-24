@@ -258,7 +258,7 @@ void reservation_destroy(DataCenter *dc, Reservation *reservation) {
 	dc->num_reservations--;
 }
 
-void spawn_vm_child(VM *vm, double localCoresCount, size_t numServers, const char* executionPath) {
+void spawn_vm_child(VM *vm, const char* executionPath,const char* limit) {
 	(void)vm;
 
 	struct rlimit lim;
@@ -270,10 +270,7 @@ void spawn_vm_child(VM *vm, double localCoresCount, size_t numServers, const cha
 	if (setrlimit(RLIMIT_FSIZE, &lim)) _exit(126);
 
 
-	char limit[32]; //Transforma
-	//atualmente todos os servers tem o mesmo cpu
-	int CPULIMIT = (int)((double)100.0f*vm->type->required.cpu *localCoresCount / (vm->server->total.cpu*(double)numServers));
-	snprintf(limit, sizeof(limit), "%d", (int)(CPULIMIT));
+
 	execlp("cpulimit", "cpulimit", "-q", "-f", "-l", limit,
 		   "--", vm->type->exec_path, (char *)NULL);
 
@@ -283,7 +280,13 @@ size_t spawn_all_vms(Reservation *res,double localCoresCount, size_t numServers,
 	size_t count = 0;
 	for (size_t i = 0; i < res->num_vms; i++) {
 		VM *vm = res->vms[i];
-		if (!initializeVmDirectories(vm,res->id))
+
+		//Como a copia recursiva é uma chamada muito "pesada" que nem modifica nada do estado do datacenter permite-se que seja realizada em paralelo
+		pthread_mutex_lock(&dc->threadCreationMutex);
+		int vmDirectoriesInitializationResult = !initializeVmDirectories(vm,res->id);
+		pthread_mutex_unlock(&dc->threadCreationMutex);
+
+		if (vmDirectoriesInitializationResult)
 		{
 			vm->state = VM_STATE_INIT_FAILED;
 			fprintf(stderr, "Failed to initialize directories of VM: \"%s\" .\n",vm->id);
@@ -292,16 +295,22 @@ size_t spawn_all_vms(Reservation *res,double localCoresCount, size_t numServers,
 
 		char execAbs[MAX_PATH_SIZE];
 		if (absolute_path(vm->path, execAbs, sizeof(execAbs)) != 0) {
+			vm->state = VM_STATE_INIT_FAILED;
 			fprintf(stderr, "Cannot resolve executable path of VM %s.\n", vm->id);
-			_exit(126);
+			continue;
 		}
+		char limit[32]; //Transforma
+		//atualmente todos os servers tem o mesmo cpu
+		int CPULIMIT = (int)((double)100.0f*vm->type->required.cpu *localCoresCount / (vm->server->total.cpu*(double)numServers));
+		snprintf(limit, sizeof(limit), "%d", (int)(CPULIMIT));
 		pid_t pid = fork();
 		if (pid < 0)
 		{
 			//Assume-se que o fork nao falha
 		} else if (pid == 0)
 		{
-			spawn_vm_child(vm,localCoresCount, numServers,execAbs);
+
+			spawn_vm_child(vm,execAbs,limit);
 			_exit(127);
 		} else
 		{
@@ -486,6 +495,7 @@ int list_config_files(const char *dir, Vector *out) {
 
 int initializeVmDirectories(VM *vmInReservation, const char* reservationID)
 {
+
 	char* path = vmInReservation->path;
 	int n = snprintf(path, MAX_PATH_SIZE,  "%s%s/%s", TMP_FILES_PATH,reservationID, vmInReservation->id);
 	if (n < 0 || (size_t)n >= MAX_PATH_SIZE) {
@@ -575,12 +585,19 @@ int askDataCenterThread(DataCenter* dc,pthread_t* tid,void *(*func) (void *),voi
 	pthread_mutex_lock(&dc->threadCreationMutex);
 	if (dc->availableThreads <= 0) {
 		pthread_mutex_unlock(&dc->threadCreationMutex);
-		fprintf(stderr, "Not available threads in the datacenter.\n");
+		fprintf(stderr, "Não há thread disponiveis no datacenter.\n");
 		return -1;
+	}
+
+
+	ThreadCreationArgs* a = malloc(sizeof(ThreadCreationArgs));
+	if (!a)
+	{
+		pthread_mutex_unlock(&dc->threadCreationMutex);
+		return -2;
 	}
 	dc->availableThreads--;//Se faz a resserva logo
 	pthread_mutex_unlock(&dc->threadCreationMutex);
-	ThreadCreationArgs* a = malloc(sizeof(ThreadCreationArgs));
 	a->dc = dc;
 	a->func = func;
 	a->arg = args;

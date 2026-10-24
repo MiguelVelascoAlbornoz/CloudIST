@@ -8,6 +8,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#define _XOPEN_SOURCE 700
+#include <ftw.h>
 #include <unistd.h>
 #include <dirent.h>
 #include <errno.h>
@@ -201,29 +203,12 @@ int executePerEachEntry(const char* path, EntryCallback func, void* context) {
   return 1;
 }
 
-int removeDir(const char* path)
-{
-  pid_t pid = fork();
-  if (pid < 0)
-  {
-    return 0;
-  }
-  //Execução do filho
-  if (pid == 0)
-  {
-    execlp("rm", "rm", "-rf","--",path, NULL);
-    _exit(127);
-  }
-  int status;
-  if (waitpid(pid, &status, 0) == -1)
-  {
-    return 0;
-  }
-  if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
-  {
-    return 1;
-  } else
-  {
-    return 0;
-  }
+
+static int rm_cb(const char *path, const struct stat *sb, int flag, struct FTW *ftw) {
+  (void)sb; (void)flag; (void)ftw;
+  return remove(path);   // remove() borra ficheros y directorios vacíos
+}
+
+int removeDir(const char *path) {
+  return nftw(path, rm_cb, 64, FTW_DEPTH | FTW_PHYS) == 0;
 }
