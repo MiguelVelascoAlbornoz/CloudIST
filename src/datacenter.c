@@ -21,7 +21,8 @@ void datacenter_init(DataCenter *dc) {
   dc->running_vms = 0;
   dc->availableThreads = 0;
   dc->num_vm_types = 0;
-
+  dc->shutting_down = 0;
+  dc->maxThreads = 0;
   dc->num_reservations = 0;
 
   dc->configured = 0;

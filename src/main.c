@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <asm-generic/errno.h>
+#include <errno.h>
 #include <linux/limits.h>
 #include "datacenter.h"
 #include "parser.h"
@@ -57,7 +57,7 @@ int main(int argc, char **argv){
 	printf("Argumento[0]: %d\nArgv: %s\n",argc,*argv); //Para que não haja warning de variaveis nao utilizadas
 		servers = SERVERS;
 		ram = RAM;
-		disk = DISK;disk = DISK;
+		disk = DISK;
 		cpu = CPU;
 		inputDir = INPUT_DIR;
 		localCoresCount = LOCAL_CORES_AVAILABLES;
