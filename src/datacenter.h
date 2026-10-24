@@ -10,7 +10,7 @@
 #include "utils/vector.h"
 
 
-#define TMP_FILES_PATH "/tmp/CloudIST/"
+#define TMP_FILES_PATH "/tmp/CloudIST-118363/"
 typedef struct VMType{
   char id[MAX_STRING_SIZE];        // Id of VM type. eg: "V1"
   char input_folder[MAX_PATH_SIZE];  // Folder with input for executable
