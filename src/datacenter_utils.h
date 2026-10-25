@@ -107,7 +107,7 @@ int askDataCenterThread(DataCenter* dc,pthread_t* tid,void *(*func) (void *),voi
  * @param res Pointer to the Reservation whose VMs should be spawned.
  * @return Retorna o numero de processos criados
  */
-size_t spawn_all_vms(Reservation **res, double localCoresCount, size_t numServers,DataCenter* dc);
+size_t spawn_all_vms(Reservation *res, double localCoresCount, size_t numServers,DataCenter* dc);
 
 /**
  * Blocks until every VM's process has exited, updating each VM's state

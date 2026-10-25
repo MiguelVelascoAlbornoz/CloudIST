@@ -167,11 +167,13 @@ int datacenter_reserve(DataCenter *dc, Reservation *reservation) {
     fprintf(stderr, "Max number of reservations reached\n");
     return 1;
   }
-
-  if (reservation_commit(dc, reservation) != 0)
+  Reservation* created = malloc(sizeof(Reservation));
+  if (!created || reservation_commit(dc, reservation) != 0)
     return 1;
 
-  dc->reservations[dc->num_reservations] = *reservation;
+
+  *created = *reservation;
+  dc->reservations[dc->num_reservations] =created;
   dc->num_reservations++;
 
   return 0;
@@ -187,7 +189,7 @@ int datacenter_execute(DataCenter *dc, const char *reservation_id) {
   if (!res) return 1;
 
 
-  size_t count = spawn_all_vms(&res,dc->localCoresCount,dc->num_servers,dc);
+  size_t count = spawn_all_vms(res,dc->localCoresCount,dc->num_servers,dc);
   printf("Reservation id %s executed with %ld vms\n", res->id, count);
   if (count <= 0 || res->running_vms <= 0) {
     res->state = RES_STATE_FINISHED;
@@ -265,7 +267,7 @@ int datacenter_list(DataCenter *dc) {
     printf(" (None)\n\n");
   } else {
     for (size_t i = 0; i < dc->num_reservations; i++) {
-      Reservation res = dc->reservations[i];
+      Reservation res = *dc->reservations[i];
       printf("  * Reservation ID: %-12s | State: %-8s | Total VMs: %zu\n",
               res.id, res_state_to_string(res.state), res.num_vms);
 

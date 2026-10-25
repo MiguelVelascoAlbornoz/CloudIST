@@ -83,7 +83,7 @@ typedef struct DataCenter {
 	double localCoresCount;
 	size_t maxThreads;
 	size_t availableThreads;
-	Reservation reservations[MAX_RESERVATIONS];
+	Reservation* reservations[MAX_RESERVATIONS]; //Tem de ser assim por que depois é uma treta quando existem aquelas realocações chatas
     size_t num_reservations;
 	pthread_mutex_t threadCreationMutex;
 	int configured;		      // Wheter the datacenter is configured or not.

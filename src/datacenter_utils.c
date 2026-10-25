@@ -36,7 +36,7 @@ VMType *VMType_exists(DataCenter *dc, const char* type_id){
  */	
 static int reservation_exists(DataCenter *dc, const char* reservation_id){
 	for(size_t i = 0; i < dc->num_reservations; i++){
-		if(strncmp(reservation_id, dc->reservations[i].id, MAX_STRING_SIZE) == 0){
+		if(strncmp(reservation_id, dc->reservations[i]->id, MAX_STRING_SIZE) == 0){
 			return 1;
 		}
 	}
@@ -185,8 +185,8 @@ Reservation *find_pending_reservation(DataCenter *dc, const char *reservation_id
 	Reservation *res = NULL;
 
 	for (size_t i = 0; i < dc->num_reservations; i++) {
-		if (strcmp(dc->reservations[i].id, reservation_id) == 0) {
-			res = &dc->reservations[i];
+		if (strcmp(dc->reservations[i]->id, reservation_id) == 0) {
+			res = dc->reservations[i];
 			break;
 		}
 	}
@@ -240,8 +240,11 @@ void reservation_destroy(DataCenter *dc, Reservation *reservation) {
 	// Find the reservation inside the Data Center reservation list.
 	size_t idx;
 	for (idx = 0; idx < dc->num_reservations; idx++) {
-			if (&dc->reservations[idx] == reservation)
+			if (dc->reservations[idx] == reservation)
+			{
+				free(reservation);
 				break;
+			}
 	}
 
 	// Reservation not found (should never happen).
@@ -249,8 +252,8 @@ void reservation_destroy(DataCenter *dc, Reservation *reservation) {
 		return;
 
 	// Remove the reservation by shifting the remaining ones.
-	memmove(&dc->reservations[idx],
-					&dc->reservations[idx + 1],
+	memmove(dc->reservations[idx],
+					dc->reservations[idx + 1],
 					(dc->num_reservations - idx - 1) * sizeof(Reservation));
 
 	dc->num_reservations--;
@@ -274,12 +277,9 @@ void spawn_vm_child(VM *vm, const char* executionPath,const char* execDir,const 
 
 }
 
-size_t spawn_all_vms(Reservation **rP,double localCoresCount, size_t numServers,DataCenter* dc) {
+size_t spawn_all_vms(Reservation *res,double localCoresCount, size_t numServers,DataCenter* dc) {
 	size_t count = 0;
-	Reservation* res = *rP;
-	//Apos o unlock nao é garantido que res continue a ser exatamente a mesma resserva pelo que guarda-se o id
-	char resId[MAX_STRING_SIZE];
-	snprintf(resId, sizeof(resId), "%s", res->id);
+
 
 	//Garantimos a leitura segura das vms durante a copia recursiva
 	VM *vms[MAX_RESERVATION_VMS];
@@ -293,22 +293,10 @@ size_t spawn_all_vms(Reservation **rP,double localCoresCount, size_t numServers,
 	pthread_mutex_unlock(&dc->lock); //Se faz a copia recursiva sem lock
 	for (size_t i = 0; i < n; i++)
 	{
-		copied[i] = initializeVmDirectories(vms[i], resId);
+		copied[i] = initializeVmDirectories(vms[i], res->id);
 	}
 	pthread_mutex_lock(&dc->lock);
 
-	if (strcmp(resId,res->id)!= 0)
-	{
-		//Agora é precisso procurar novamente o pointer para a resserva
-		for (size_t j = 0; j < dc->num_reservations; j++)
-		{
-			if (strcmp(resId,dc->reservations[j].id)==0)
-			{
-				res = &dc->reservations[j];
-				*rP = res; // Assim ao sair o propio chamador fica com a nova versão
-			}
-		}
-	}
 
 	for (size_t i = 0; i < n; i++) {
 		VM *vm = vms[i];
@@ -703,7 +691,7 @@ void getDatacenterInfoFromPID(DataCenter *dc, pid_t pid,Reservation** reservatio
 	*vm = NULL;
 	*reservation = NULL;
 	for (size_t i = 0; i < dc->num_reservations; i++) {
-		Reservation *res = &dc->reservations[i];
+		Reservation *res = dc->reservations[i];
 		for (size_t j = 0; j < res->num_vms; j++) {
 			VM *vmL = res->vms[j];
 			if (vmL->pid == pid) {
