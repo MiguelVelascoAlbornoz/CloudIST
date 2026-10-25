@@ -11,9 +11,9 @@
 
 #ifdef _DEBUG //Em modo debug em vez de pasar os argumentos como parametros definem-se logo aqui
 	#define SERVERS 1
-	#define RAM 170
-	#define DISK 400
-	#define CPU 60
+	#define RAM 17000
+	#define DISK 40000
+	#define CPU 600
 	#define INPUT_DIR "config"
 	#define LOCAL_CORES_AVAILABLES 4
 	#define MAX_THREADS 20
@@ -96,12 +96,22 @@ int main(int argc, char **argv){
 
 		if (rc == ETIMEDOUT) {
 			static const char *frames[] = {".", "..", "..."};
+#ifdef _DEBUG
+			printf("\rWaiting for %ld vms to finish%s\n",dc.running_vms, frames[dotsCount % 3]);
+			fflush(stdout);
+			dotsCount++;
+
+			clock_gettime(CLOCK_REALTIME, &deadline);
+			deadline.tv_sec += 2;
+#else
 			printf("\rWaiting CloudIST process end%s\n", frames[dotsCount % 3]);
 			fflush(stdout);
 			dotsCount++;
 
 			clock_gettime(CLOCK_REALTIME, &deadline);
 			deadline.tv_sec += 2;
+
+#endif
 		}
 	}
 	fflush(stdout);

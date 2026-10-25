@@ -349,6 +349,7 @@ size_t spawn_all_vms(Reservation **rP,double localCoresCount, size_t numServers,
 		} else
 		{
 			count++;
+			vm->state = VM_STATE_RUNNING;
 			vm->pid = pid;
 			dc->running_vms++;
 			res->running_vms++;
@@ -464,7 +465,7 @@ int process_command(int fd, DataCenter *dc)
 					break;
 				}
 			pthread_mutex_unlock(&dc->lock);
-				printf("Finished reservation execution!\n");
+
 
 				break;
 
