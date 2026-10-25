@@ -3,6 +3,10 @@
     "directory": "/home/migue/SO/CloudIST",
     "arguments": [
       "gcc",
+      "-g",
+      "-O1",
+      "-fsanitize=address,undefined",
+      "-fno-omit-frame-pointer",
       "-DPROJECT_NAME=\"CloudIST\"",
       "-MMD",
       "-MP",
@@ -17,7 +21,7 @@
       "-c",
       "src/datacenter.c",
       "-o",
-      "build/compilationFiles/release/datacenter.o"
+      "build/compilationFiles/asan/datacenter.o"
     ],
     "file": "src/datacenter.c"
   },
@@ -25,6 +29,10 @@
     "directory": "/home/migue/SO/CloudIST",
     "arguments": [
       "gcc",
+      "-g",
+      "-O1",
+      "-fsanitize=address,undefined",
+      "-fno-omit-frame-pointer",
       "-DPROJECT_NAME=\"CloudIST\"",
       "-MMD",
       "-MP",
@@ -39,7 +47,7 @@
       "-c",
       "src/resources.c",
       "-o",
-      "build/compilationFiles/release/resources.o"
+      "build/compilationFiles/asan/resources.o"
     ],
     "file": "src/resources.c"
   },
@@ -47,6 +55,10 @@
     "directory": "/home/migue/SO/CloudIST",
     "arguments": [
       "gcc",
+      "-g",
+      "-O1",
+      "-fsanitize=address,undefined",
+      "-fno-omit-frame-pointer",
       "-DPROJECT_NAME=\"CloudIST\"",
       "-MMD",
       "-MP",
@@ -61,7 +73,7 @@
       "-c",
       "src/main.c",
       "-o",
-      "build/compilationFiles/release/main.o"
+      "build/compilationFiles/asan/main.o"
     ],
     "file": "src/main.c"
   },
@@ -69,6 +81,10 @@
     "directory": "/home/migue/SO/CloudIST",
     "arguments": [
       "gcc",
+      "-g",
+      "-O1",
+      "-fsanitize=address,undefined",
+      "-fno-omit-frame-pointer",
       "-DPROJECT_NAME=\"CloudIST\"",
       "-MMD",
       "-MP",
@@ -83,7 +99,7 @@
       "-c",
       "src/filesystem.c",
       "-o",
-      "build/compilationFiles/release/filesystem.o"
+      "build/compilationFiles/asan/filesystem.o"
     ],
     "file": "src/filesystem.c"
   },
@@ -91,6 +107,10 @@
     "directory": "/home/migue/SO/CloudIST",
     "arguments": [
       "gcc",
+      "-g",
+      "-O1",
+      "-fsanitize=address,undefined",
+      "-fno-omit-frame-pointer",
       "-DPROJECT_NAME=\"CloudIST\"",
       "-MMD",
       "-MP",
@@ -105,7 +125,7 @@
       "-c",
       "src/datacenter_utils.c",
       "-o",
-      "build/compilationFiles/release/datacenter_utils.o"
+      "build/compilationFiles/asan/datacenter_utils.o"
     ],
     "file": "src/datacenter_utils.c"
   },
@@ -113,6 +133,10 @@
     "directory": "/home/migue/SO/CloudIST",
     "arguments": [
       "gcc",
+      "-g",
+      "-O1",
+      "-fsanitize=address,undefined",
+      "-fno-omit-frame-pointer",
       "-DPROJECT_NAME=\"CloudIST\"",
       "-MMD",
       "-MP",
@@ -127,7 +151,7 @@
       "-c",
       "src/parser.c",
       "-o",
-      "build/compilationFiles/release/parser.o"
+      "build/compilationFiles/asan/parser.o"
     ],
     "file": "src/parser.c"
   },
@@ -135,6 +159,10 @@
     "directory": "/home/migue/SO/CloudIST",
     "arguments": [
       "gcc",
+      "-g",
+      "-O1",
+      "-fsanitize=address,undefined",
+      "-fno-omit-frame-pointer",
       "-DPROJECT_NAME=\"CloudIST\"",
       "-MMD",
       "-MP",
@@ -149,7 +177,7 @@
       "-c",
       "src/utils/vector.c",
       "-o",
-      "build/compilationFiles/release/vector.o"
+      "build/compilationFiles/asan/vector.o"
     ],
     "file": "src/utils/vector.c"
   }
