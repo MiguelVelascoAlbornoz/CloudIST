@@ -272,7 +272,7 @@ void spawn_vm_child(VM *vm, const char* executionPath,const char* execDir,const 
 
 
 
-	execlp("cpulimit", "cpulimit", "-q", "-f", "-l", limit,
+	execlp("cpulimit", "cpulimit", "-f","-q", "-l", limit,
 		   "--", execDir, (char *)NULL);
 
 }
@@ -332,14 +332,22 @@ size_t spawn_all_vms(Reservation *res,double localCoresCount, size_t numServers,
 			CPULIMIT = 1200;
 		}
 		snprintf(limit, sizeof(limit), "%d", (int)(CPULIMIT));
+
 		pid_t pid = fork();
+
 		if (pid < 0)
 		{
-			//Assume-se que o fork nao falha
+#ifdef _DEBUG
+			fprintf(stderr,"FORK FALHOU");
+#endif
 		} else if (pid == 0)
 		{
 
 			spawn_vm_child(vm,execAbs,execDir,limit);
+#ifdef _DEBUG
+			dprintf(STDERR_FILENO, "[child %s] exec %s limit=%s\n", vm->id, execDir, limit);
+#endif
+
 			_exit(127);
 		} else
 		{
@@ -418,9 +426,9 @@ int process_command(int fd, DataCenter *dc)
 					pthread_mutex_unlock(&dc->lock);
 					break;
 				}
-
-				printf("VM successfully defined!\n");
 				pthread_mutex_unlock(&dc->lock);
+				printf("VM successfully defined!\n");
+
 				break;
 
 			}
@@ -616,7 +624,6 @@ int askDataCenterThread(DataCenter* dc,pthread_t* tid,void *(*func) (void *),voi
 	pthread_mutex_lock(&dc->threadCreationMutex);
 	if (dc->availableThreads <= 0) {
 		pthread_mutex_unlock(&dc->threadCreationMutex);
-		fprintf(stderr, "Não há thread disponiveis no datacenter.\n");
 		return -1;
 	}
 
@@ -661,7 +668,8 @@ void* waitingThread(void* arg) {
 		//	Quando existe uma chamada a removeDir este wait poderia chegar a acordar no fim dessa chamada
 		//	De momento o unico problmea que isso pode causar é um falso sinal de erro na propia chamada de removeDir
 		if (pid < 0) {
-			if (errno != EINTR) usleep(1000);     // evita busy loop
+			struct timespec ts = { .tv_sec = 0, .tv_nsec = 1000000 }; // 1 ms
+			nanosleep(&ts, NULL);
 			continue;
 		}
 		//Temos de garantir que as reservações nao estão a mudar
@@ -675,12 +683,15 @@ void* waitingThread(void* arg) {
 			pthread_mutex_unlock(&dc->lock);
 			continue;
 		}
-		if (WIFSIGNALED(status))
-		{
+		if (WIFSIGNALED(status)) {
 			fprintf(stderr, "VM %s terminated by signal %d\n", vm->id, WTERMSIG(status));
-		} else if (WEXITSTATUS(status) != 0)
-		{
+		} else if (WIFEXITED(status)) {
+#ifdef _DEBUG
 			fprintf(stderr, "VM %s exited with code %d\n", vm->id, WEXITSTATUS(status));
+#else
+			if (WEXITSTATUS(status) != 0)
+				fprintf(stderr, "VM %s exited with code %d\n", vm->id, WEXITSTATUS(status));
+#endif
 		}
 		vm->state = VM_STATE_TERMINATED;
 		vm_release(vm);

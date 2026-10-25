@@ -38,19 +38,19 @@ int main(int argc, char **argv){
 	size_t maxThreads;
 	#ifndef _DEBUG //O executavel debug nao pede argumentos para ser mais facil o debug entao este codigo nao acontece se for debug mode
 	if (argc != DESIRED_ARGS) {
-		fprintf(stderr, "Usage: %s <servers> <ram> <disk> <cpus> <input dir> <cores-disponiveis-para-CloudIST> <max-threads>\n", argv[0]);
+		fprintf(stderr, "Usage: %s <servers> <ram> <disk> <cpus> <cores-disponiveis-para-CloudIST> <input dir>  <max-threads>\n", argv[0]);
 		return 1;
 	}
 	if (parse_size_t_arg(argv[1], &servers) != 0 ||
 			parse_size_t_arg(argv[2], &ram) != 0 ||
 			parse_size_t_arg(argv[3], &disk) != 0 ||
 			parse_double_arg(argv[4], &cpu) != 0 ||
-			parse_double_arg(argv[6], &localCoresCount) != 0 ||
+			parse_double_arg(argv[5], &localCoresCount) != 0 ||
 			parse_size_t_arg(argv[7], &maxThreads) != 0) {
 		fprintf(stderr, "Invalid command line arguments.\n");
 		return 1;
 	}
-	inputDir = argv[5];
+	inputDir = argv[6];
 	#else//Codigo que acontece em debug mode
 	printf("Project name: %s\n", PROJECT_NAME);
 	printf("Project version: %s\n", PROJECT_VERSION);
@@ -96,26 +96,18 @@ int main(int argc, char **argv){
 
 		if (rc == ETIMEDOUT) {
 			static const char *frames[] = {".", "..", "..."};
-#ifdef _DEBUG
-			printf("\rWaiting for %ld vms to finish%s\n",dc.running_vms, frames[dotsCount % 3]);
+
+			printf("\rWaiting for %ld vms to finish %s       ",dc.running_vms, frames[dotsCount % 3]);
 			fflush(stdout);
 			dotsCount++;
 
 			clock_gettime(CLOCK_REALTIME, &deadline);
-			deadline.tv_sec += 2;
-#else
-			printf("\rWaiting CloudIST process end%s\n", frames[dotsCount % 3]);
-			fflush(stdout);
-			dotsCount++;
+			deadline.tv_sec += 1;
 
-			clock_gettime(CLOCK_REALTIME, &deadline);
-			deadline.tv_sec += 2;
-
-#endif
 		}
 	}
 	fflush(stdout);
-
+	printf("\n");
 	dc.shutting_down = 1;
 	//Uma vez todos os filhos terem terminado o thread de espera pelos processos filhos ficara dormido novamente (por isso deve ser acordado).
 	//Como dc.shuttin_down = 1 esse thread entrar numa condicional que o leva ao seu fim

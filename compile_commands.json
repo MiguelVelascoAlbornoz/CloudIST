@@ -3,9 +3,6 @@
     "directory": "/home/migue/SO/CloudIST",
     "arguments": [
       "gcc",
-      "-g",
-      "-O0",
-      "-D_DEBUG",
       "-DPROJECT_NAME=\"CloudIST\"",
       "-MMD",
       "-MP",
@@ -20,7 +17,7 @@
       "-c",
       "src/datacenter.c",
       "-o",
-      "build/compilationFiles/debug/datacenter.o"
+      "build/compilationFiles/release/datacenter.o"
     ],
     "file": "src/datacenter.c"
   },
@@ -28,9 +25,6 @@
     "directory": "/home/migue/SO/CloudIST",
     "arguments": [
       "gcc",
-      "-g",
-      "-O0",
-      "-D_DEBUG",
       "-DPROJECT_NAME=\"CloudIST\"",
       "-MMD",
       "-MP",
@@ -45,7 +39,7 @@
       "-c",
       "src/resources.c",
       "-o",
-      "build/compilationFiles/debug/resources.o"
+      "build/compilationFiles/release/resources.o"
     ],
     "file": "src/resources.c"
   },
@@ -53,9 +47,6 @@
     "directory": "/home/migue/SO/CloudIST",
     "arguments": [
       "gcc",
-      "-g",
-      "-O0",
-      "-D_DEBUG",
       "-DPROJECT_NAME=\"CloudIST\"",
       "-MMD",
       "-MP",
@@ -70,7 +61,7 @@
       "-c",
       "src/main.c",
       "-o",
-      "build/compilationFiles/debug/main.o"
+      "build/compilationFiles/release/main.o"
     ],
     "file": "src/main.c"
   },
@@ -78,9 +69,6 @@
     "directory": "/home/migue/SO/CloudIST",
     "arguments": [
       "gcc",
-      "-g",
-      "-O0",
-      "-D_DEBUG",
       "-DPROJECT_NAME=\"CloudIST\"",
       "-MMD",
       "-MP",
@@ -95,7 +83,7 @@
       "-c",
       "src/filesystem.c",
       "-o",
-      "build/compilationFiles/debug/filesystem.o"
+      "build/compilationFiles/release/filesystem.o"
     ],
     "file": "src/filesystem.c"
   },
@@ -103,9 +91,6 @@
     "directory": "/home/migue/SO/CloudIST",
     "arguments": [
       "gcc",
-      "-g",
-      "-O0",
-      "-D_DEBUG",
       "-DPROJECT_NAME=\"CloudIST\"",
       "-MMD",
       "-MP",
@@ -120,7 +105,7 @@
       "-c",
       "src/datacenter_utils.c",
       "-o",
-      "build/compilationFiles/debug/datacenter_utils.o"
+      "build/compilationFiles/release/datacenter_utils.o"
     ],
     "file": "src/datacenter_utils.c"
   },
@@ -128,9 +113,6 @@
     "directory": "/home/migue/SO/CloudIST",
     "arguments": [
       "gcc",
-      "-g",
-      "-O0",
-      "-D_DEBUG",
       "-DPROJECT_NAME=\"CloudIST\"",
       "-MMD",
       "-MP",
@@ -145,7 +127,7 @@
       "-c",
       "src/parser.c",
       "-o",
-      "build/compilationFiles/debug/parser.o"
+      "build/compilationFiles/release/parser.o"
     ],
     "file": "src/parser.c"
   },
@@ -153,9 +135,6 @@
     "directory": "/home/migue/SO/CloudIST",
     "arguments": [
       "gcc",
-      "-g",
-      "-O0",
-      "-D_DEBUG",
       "-DPROJECT_NAME=\"CloudIST\"",
       "-MMD",
       "-MP",
@@ -170,7 +149,7 @@
       "-c",
       "src/utils/vector.c",
       "-o",
-      "build/compilationFiles/debug/vector.o"
+      "build/compilationFiles/release/vector.o"
     ],
     "file": "src/utils/vector.c"
   }
