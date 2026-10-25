@@ -242,7 +242,6 @@ void reservation_destroy(DataCenter *dc, Reservation *reservation) {
 	for (idx = 0; idx < dc->num_reservations; idx++) {
 			if (dc->reservations[idx] == reservation)
 			{
-				free(reservation);
 				break;
 			}
 	}
@@ -252,11 +251,12 @@ void reservation_destroy(DataCenter *dc, Reservation *reservation) {
 		return;
 
 	// Remove the reservation by shifting the remaining ones.
-	memmove(dc->reservations[idx],
-					dc->reservations[idx + 1],
-					(dc->num_reservations - idx - 1) * sizeof(Reservation));
-
+	memmove(&dc->reservations[idx],
+		&dc->reservations[idx + 1],
+		(dc->num_reservations - idx - 1) * sizeof(Reservation *));
 	dc->num_reservations--;
+	dc->reservations[dc->num_reservations] = NULL;
+	free(reservation);
 }
 
 void spawn_vm_child(VM *vm, const char* executionPath,const char* execDir,const char* limit) {
@@ -324,6 +324,13 @@ size_t spawn_all_vms(Reservation *res,double localCoresCount, size_t numServers,
 		char limit[32]; //Transforma
 		//atualmente todos os servers tem o mesmo cpu
 		int CPULIMIT = (int)((double)100.0f*vm->type->required.cpu *localCoresCount / (vm->server->total.cpu*(double)numServers));
+		if (CPULIMIT < 1)
+		{
+			CPULIMIT = 1;
+		} else if (CPULIMIT > 1200)
+		{
+			CPULIMIT = 1200;
+		}
 		snprintf(limit, sizeof(limit), "%d", (int)(CPULIMIT));
 		pid_t pid = fork();
 		if (pid < 0)
@@ -654,7 +661,7 @@ void* waitingThread(void* arg) {
 		//	Quando existe uma chamada a removeDir este wait poderia chegar a acordar no fim dessa chamada
 		//	De momento o unico problmea que isso pode causar é um falso sinal de erro na propia chamada de removeDir
 		if (pid < 0) {
-			if (errno != EINTR) sleep(1000);     // evita busy loop
+			if (errno != EINTR) usleep(1000);     // evita busy loop
 			continue;
 		}
 		//Temos de garantir que as reservações nao estão a mudar

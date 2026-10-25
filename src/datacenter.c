@@ -41,6 +41,8 @@ void datacenter_destroy(DataCenter *dc) {
       fprintf(stderr, "Error removing temporary files.\n");
     }
   }
+  while (dc->num_reservations > 0)
+    reservation_destroy(dc, dc->reservations[0]);
   for (size_t i = 0; i < dc->num_servers; i++) {
     for(size_t j = 0; j < dc->servers[i].num_hosted_vms; j++){
       free(dc->servers[i].hosted_vms[j]);
@@ -168,8 +170,13 @@ int datacenter_reserve(DataCenter *dc, Reservation *reservation) {
     return 1;
   }
   Reservation* created = malloc(sizeof(Reservation));
-  if (!created || reservation_commit(dc, reservation) != 0)
+  if (!created) return 1;
+  if (reservation_commit(dc, reservation) != 0)
+  {
+    free(created);
     return 1;
+  }
+
 
 
   *created = *reservation;
