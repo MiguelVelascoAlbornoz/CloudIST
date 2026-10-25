@@ -204,6 +204,21 @@ Reservation *find_pending_reservation(DataCenter *dc, const char *reservation_id
 	return res;
 }
 
+void vm_release(VM *vm) {
+	Server *server = vm->server;
+	for (size_t j = 0; j < server->num_hosted_vms; j++) {
+		if (server->hosted_vms[j] == vm) {
+			// Solo se devuelven recursos si la VM seguía en el servidor.
+			resources_add(&server->available, vm->type->required);
+			memmove(&server->hosted_vms[j],
+					&server->hosted_vms[j + 1],
+					(server->num_hosted_vms - j - 1) * sizeof(VM *));
+			server->num_hosted_vms--;
+			server->hosted_vms[server->num_hosted_vms] = NULL;
+			return;
+		}
+	}
+}
 void reservation_destroy(DataCenter *dc, Reservation *reservation) {
 	// Free every VM belonging to the reservation.
 	char resPath[MAX_PATH_SIZE];
@@ -215,24 +230,7 @@ void reservation_destroy(DataCenter *dc, Reservation *reservation) {
 	for (size_t i = 0; i < reservation->num_vms; i++) {
 		VM *vm = reservation->vms[i];
 
-		Server *server = vm->server;
-
-		// Return the VM resources back to the hosting server.
-		resources_add(&server->available, vm->type->required);
-
-		// Remove the VM from the server's hosted VM list.
-		for (size_t j = 0; j < server->num_hosted_vms; j++) {
-			if (server->hosted_vms[j] == vm) {
-				// Shift the remaining VMs one position to the left.
-				memmove(&server->hosted_vms[j],
-								&server->hosted_vms[j + 1],
-								(server->num_hosted_vms - j - 1) * sizeof(VM *));
-
-				server->num_hosted_vms--;
-				break;
-			}
-		}
-
+		vm_release(vm);
 		free(vm);
 		reservation->vms[i] = NULL;
 	}
@@ -258,7 +256,7 @@ void reservation_destroy(DataCenter *dc, Reservation *reservation) {
 	dc->num_reservations--;
 }
 
-void spawn_vm_child(VM *vm, const char* executionPath,const char* limit) {
+void spawn_vm_child(VM *vm, const char* executionPath,const char* execDir,const char* limit) {
 	(void)vm;
 
 	struct rlimit lim;
@@ -272,23 +270,51 @@ void spawn_vm_child(VM *vm, const char* executionPath,const char* limit) {
 
 
 	execlp("cpulimit", "cpulimit", "-q", "-f", "-l", limit,
-		   "--", vm->type->exec_path, (char *)NULL);
+		   "--", execDir, (char *)NULL);
 
 }
 
-size_t spawn_all_vms(Reservation *res,double localCoresCount, size_t numServers,DataCenter* dc) {
+size_t spawn_all_vms(Reservation **rP,double localCoresCount, size_t numServers,DataCenter* dc) {
 	size_t count = 0;
-	for (size_t i = 0; i < res->num_vms; i++) {
-		VM *vm = res->vms[i];
+	Reservation* res = *rP;
+	//Apos o unlock nao é garantido que res continue a ser exatamente a mesma resserva pelo que guarda-se o id
+	char resId[MAX_STRING_SIZE];
+	snprintf(resId, sizeof(resId), "%s", res->id);
 
-		//Como a copia recursiva é uma chamada muito "pesada" que nem modifica nada do estado do datacenter permite-se que seja realizada em paralelo
-		pthread_mutex_lock(&dc->threadCreationMutex);
-		int vmDirectoriesInitializationResult = !initializeVmDirectories(vm,res->id);
-		pthread_mutex_unlock(&dc->threadCreationMutex);
+	//Garantimos a leitura segura das vms durante a copia recursiva
+	VM *vms[MAX_RESERVATION_VMS];
+	int copied[MAX_RESERVATION_VMS];
+	size_t n = res->num_vms;
+	memcpy(vms, res->vms, n * sizeof(VM *));
 
-		if (vmDirectoriesInitializationResult)
+	res->state = RES_STATE_RUNNING;
+	res->running_vms++;          //Garantimos que a resserva nao pode ser destruida
+
+	pthread_mutex_unlock(&dc->lock); //Se faz a copia recursiva sem lock
+	for (size_t i = 0; i < n; i++)
+	{
+		copied[i] = initializeVmDirectories(vms[i], resId);
+	}
+	pthread_mutex_lock(&dc->lock);
+
+	if (strcmp(resId,res->id)!= 0)
+	{
+		//Agora é precisso procurar novamente o pointer para a resserva
+		for (size_t j = 0; j < dc->num_reservations; j++)
 		{
+			if (strcmp(resId,dc->reservations[j].id)==0)
+			{
+				res = &dc->reservations[j];
+				*rP = res; // Assim ao sair o propio chamador fica com a nova versão
+			}
+		}
+	}
+
+	for (size_t i = 0; i < n; i++) {
+		VM *vm = vms[i];
+		if (!copied[i]) {
 			vm->state = VM_STATE_INIT_FAILED;
+			vm_release(vm);
 			fprintf(stderr, "Failed to initialize directories of VM: \"%s\" .\n",vm->id);
 			continue;
 		}
@@ -296,6 +322,14 @@ size_t spawn_all_vms(Reservation *res,double localCoresCount, size_t numServers,
 		char execAbs[MAX_PATH_SIZE];
 		if (absolute_path(vm->path, execAbs, sizeof(execAbs)) != 0) {
 			vm->state = VM_STATE_INIT_FAILED;
+			vm_release(vm);
+			fprintf(stderr, "Cannot resolve execution path of VM %s.\n", vm->id);
+			continue;
+		}
+		char execDir[MAX_PATH_SIZE];
+		if (absolute_path(vm->type->exec_path, execDir, sizeof(execDir)) != 0) {
+			vm->state = VM_STATE_INIT_FAILED;
+			vm_release(vm);
 			fprintf(stderr, "Cannot resolve executable path of VM %s.\n", vm->id);
 			continue;
 		}
@@ -310,15 +344,14 @@ size_t spawn_all_vms(Reservation *res,double localCoresCount, size_t numServers,
 		} else if (pid == 0)
 		{
 
-			spawn_vm_child(vm,execAbs,limit);
+			spawn_vm_child(vm,execAbs,execDir,limit);
 			_exit(127);
 		} else
 		{
 			count++;
 			vm->pid = pid;
-			vm->state = VM_STATE_RUNNING;
-			res->running_vms++;
 			dc->running_vms++;
+			res->running_vms++;
 			pthread_cond_broadcast(&dc->cond); //Thread de espera deve ser acordado imediato
 			#ifdef _DEBUG
 			printf("VM with id %s running.\n",vm->id);
@@ -326,6 +359,8 @@ size_t spawn_all_vms(Reservation *res,double localCoresCount, size_t numServers,
 		}
 
 	}
+	res->running_vms--;
+
 	return count;
 }
 
@@ -602,6 +637,7 @@ int askDataCenterThread(DataCenter* dc,pthread_t* tid,void *(*func) (void *),voi
 	a->func = func;
 	a->arg = args;
 	if (pthread_create(tid,NULL,threadWrapper,a) != 0) {
+		free(a);
 		pthread_mutex_lock(&dc->threadCreationMutex);
 		dc->availableThreads++;//Se faz a resserva logo
 		pthread_mutex_unlock(&dc->threadCreationMutex);
@@ -643,10 +679,15 @@ void* waitingThread(void* arg) {
 			pthread_mutex_unlock(&dc->lock);
 			continue;
 		}
-		if (!WIFEXITED(status)) {
-			fprintf(stderr, "Reservation with id: %s\nVM with id: %s\nEnded with exit code: %d\n", reservation->id,vm->id,WEXITSTATUS(status));
+		if (WIFSIGNALED(status))
+		{
+			fprintf(stderr, "VM %s terminated by signal %d\n", vm->id, WTERMSIG(status));
+		} else if (WEXITSTATUS(status) != 0)
+		{
+			fprintf(stderr, "VM %s exited with code %d\n", vm->id, WEXITSTATUS(status));
 		}
 		vm->state = VM_STATE_TERMINATED;
+		vm_release(vm);
 		dc->running_vms--;
 		reservation->running_vms--;
 		if (reservation->running_vms <= 0) {

@@ -83,7 +83,7 @@ void reservation_destroy(DataCenter *dc, Reservation *reservation);
  *
  * @param vm Pointer to the VM being spawned.
  */
-void spawn_vm_child(VM *vm, const char* executionPath, const char* limit);
+void spawn_vm_child(VM *vm, const char* executionPat,const char* execDir, const char* limit);
 
 /**
  * @brief Esta função deve ser chamada sempre que seja necessario criar um novo thread para o sistema pois sem ela seria impossivel tomar registo dos threads existentes. Ela automaticamente garante que a criação de um thread resserve um espaço e a sua destruição o liberte
@@ -107,7 +107,7 @@ int askDataCenterThread(DataCenter* dc,pthread_t* tid,void *(*func) (void *),voi
  * @param res Pointer to the Reservation whose VMs should be spawned.
  * @return Retorna o numero de processos criados
  */
-size_t spawn_all_vms(Reservation *res, double localCoresCount, size_t numServers,DataCenter* dc);
+size_t spawn_all_vms(Reservation **res, double localCoresCount, size_t numServers,DataCenter* dc);
 
 /**
  * Blocks until every VM's process has exited, updating each VM's state

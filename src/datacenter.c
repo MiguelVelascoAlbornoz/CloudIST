@@ -187,11 +187,9 @@ int datacenter_execute(DataCenter *dc, const char *reservation_id) {
   if (!res) return 1;
 
 
-  size_t count = spawn_all_vms(res,dc->localCoresCount,dc->num_servers,dc);
+  size_t count = spawn_all_vms(&res,dc->localCoresCount,dc->num_servers,dc);
   printf("Reservation id %s executed with %ld vms\n", res->id, count);
-  if (count > 0) {
-    res->state = RES_STATE_RUNNING;
-  } else {
+  if (count <= 0 || res->running_vms <= 0) {
     res->state = RES_STATE_FINISHED;
     reservation_destroy(dc,res);
    }

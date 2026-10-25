@@ -4,8 +4,8 @@
     "arguments": [
       "gcc",
       "-g",
-      "-O0",
-      "-D_DEBUG",
+      "-O1",
+      "-fsanitize=thread",
       "-DPROJECT_NAME=\"CloudIST\"",
       "-MMD",
       "-MP",
@@ -20,7 +20,7 @@
       "-c",
       "src/datacenter.c",
       "-o",
-      "build/compilationFiles/debug/datacenter.o"
+      "build/compilationFiles/tsan/datacenter.o"
     ],
     "file": "src/datacenter.c"
   },
@@ -29,8 +29,8 @@
     "arguments": [
       "gcc",
       "-g",
-      "-O0",
-      "-D_DEBUG",
+      "-O1",
+      "-fsanitize=thread",
       "-DPROJECT_NAME=\"CloudIST\"",
       "-MMD",
       "-MP",
@@ -45,7 +45,7 @@
       "-c",
       "src/resources.c",
       "-o",
-      "build/compilationFiles/debug/resources.o"
+      "build/compilationFiles/tsan/resources.o"
     ],
     "file": "src/resources.c"
   },
@@ -54,8 +54,8 @@
     "arguments": [
       "gcc",
       "-g",
-      "-O0",
-      "-D_DEBUG",
+      "-O1",
+      "-fsanitize=thread",
       "-DPROJECT_NAME=\"CloudIST\"",
       "-MMD",
       "-MP",
@@ -70,7 +70,7 @@
       "-c",
       "src/main.c",
       "-o",
-      "build/compilationFiles/debug/main.o"
+      "build/compilationFiles/tsan/main.o"
     ],
     "file": "src/main.c"
   },
@@ -79,8 +79,8 @@
     "arguments": [
       "gcc",
       "-g",
-      "-O0",
-      "-D_DEBUG",
+      "-O1",
+      "-fsanitize=thread",
       "-DPROJECT_NAME=\"CloudIST\"",
       "-MMD",
       "-MP",
@@ -95,7 +95,7 @@
       "-c",
       "src/filesystem.c",
       "-o",
-      "build/compilationFiles/debug/filesystem.o"
+      "build/compilationFiles/tsan/filesystem.o"
     ],
     "file": "src/filesystem.c"
   },
@@ -104,8 +104,8 @@
     "arguments": [
       "gcc",
       "-g",
-      "-O0",
-      "-D_DEBUG",
+      "-O1",
+      "-fsanitize=thread",
       "-DPROJECT_NAME=\"CloudIST\"",
       "-MMD",
       "-MP",
@@ -120,7 +120,7 @@
       "-c",
       "src/datacenter_utils.c",
       "-o",
-      "build/compilationFiles/debug/datacenter_utils.o"
+      "build/compilationFiles/tsan/datacenter_utils.o"
     ],
     "file": "src/datacenter_utils.c"
   },
@@ -129,8 +129,8 @@
     "arguments": [
       "gcc",
       "-g",
-      "-O0",
-      "-D_DEBUG",
+      "-O1",
+      "-fsanitize=thread",
       "-DPROJECT_NAME=\"CloudIST\"",
       "-MMD",
       "-MP",
@@ -145,7 +145,7 @@
       "-c",
       "src/parser.c",
       "-o",
-      "build/compilationFiles/debug/parser.o"
+      "build/compilationFiles/tsan/parser.o"
     ],
     "file": "src/parser.c"
   },
@@ -154,8 +154,8 @@
     "arguments": [
       "gcc",
       "-g",
-      "-O0",
-      "-D_DEBUG",
+      "-O1",
+      "-fsanitize=thread",
       "-DPROJECT_NAME=\"CloudIST\"",
       "-MMD",
       "-MP",
@@ -170,7 +170,7 @@
       "-c",
       "src/utils/vector.c",
       "-o",
-      "build/compilationFiles/debug/vector.o"
+      "build/compilationFiles/tsan/vector.o"
     ],
     "file": "src/utils/vector.c"
   }
