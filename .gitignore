@@ -6,6 +6,7 @@
 build/*
 build\*
 *.out
+proj-so.zip
 input/*
 input\*
 # Executable 
