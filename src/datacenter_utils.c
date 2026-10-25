@@ -270,11 +270,14 @@ void spawn_vm_child(VM *vm, const char* executionPath,const char* execDir,const 
 	lim.rlim_cur = lim.rlim_max = (rlim_t)vm->type->required.disk << 30;
 	if (setrlimit(RLIMIT_FSIZE, &lim)) _exit(126);
 
-
+	if (access(execDir, X_OK) != 0) { //Estavam a haver erros de permission denied e o debug estava a ser muito dificil
+		perror(execDir);
+		_exit(126);
+	}
 
 	execlp("cpulimit", "cpulimit", "-f","-q", "-l", limit,
 		   "--", execDir, (char *)NULL);
-
+	printf("Exec falhado");
 }
 
 size_t spawn_all_vms(Reservation *res,double localCoresCount, size_t numServers,DataCenter* dc) {
