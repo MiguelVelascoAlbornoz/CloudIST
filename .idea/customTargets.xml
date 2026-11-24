@@ -15,5 +15,12 @@
         </build>
       </configuration>
     </target>
+    <target id="9d3dddeb-6542-4686-8ba6-071fc94f8a2e" name="Build Debug Client" defaultType="TOOL">
+      <configuration id="ad933994-8652-46fa-8ec4-28a78aac4fc1" name="Build Debug Client" toolchainName="WSL">
+        <build type="TOOL">
+          <tool actionId="Tool_External Tools_PyBuildClientDebug" />
+        </build>
+      </configuration>
+    </target>
   </component>
 </project>

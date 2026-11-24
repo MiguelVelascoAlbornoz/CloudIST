@@ -484,6 +484,7 @@ int process_command(int fd, DataCenter *dc)
 				break;
 
 			case CMD_WAIT:
+
 				unsigned int delay;
 
 				if(parse_wait(fd, &delay) != 0){
@@ -615,11 +616,13 @@ static void releaseSlot(void *p) {
 static void* threadWrapper(void *p) {
 	ThreadCreationArgs a = *(ThreadCreationArgs *)p;//Copia so o conteudo
 	free(p);
-
-
 	void *r = NULL;
+	//Isto faz com que o thread chame a funñçao releaseSlot durante o cleanup. Assim quando o thread termina de forma nao esperada garante-se um correto controlo do numero de threads ativos.
+	//Isto +e necessario pois se o thread utilizar pthread_exit o pthread_cancel nçao se garante o controlo do numero de threads existentes
 	pthread_cleanup_push(releaseSlot, a.dc);
 	r = a.func(a.arg);
+	
+	//Chama ao tal cleanup, releaseSlot
 	pthread_cleanup_pop(1);
 	return r;
 }

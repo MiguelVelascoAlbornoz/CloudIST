@@ -91,6 +91,7 @@ libs = {
     "tsan": [],
     "all": ["-lm"]
 }
+
 #Configurações de paths, extensões, libs e flags
 compilationPath = Path("build/compilationFiles") #Path onde fica todo o relacionado com a compilação
 sourcePath = Path("src") #Path onde estão os ficheiros cpp

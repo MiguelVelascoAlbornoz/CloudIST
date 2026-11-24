@@ -7,6 +7,8 @@ build/*
 build\*
 *.out
 proj-so.zip
+ClientCWD/*
+*.xml
 input/*
 input\*
 # Executable 

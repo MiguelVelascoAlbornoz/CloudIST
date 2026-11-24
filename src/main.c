@@ -14,12 +14,12 @@
 	#define RAM 17000
 	#define DISK 40000
 	#define CPU 600
-	#define INPUT_DIR "config"
+	#define FIFO_PATH "/tmp/CloudIST/server"
 	#define LOCAL_CORES_AVAILABLES 4
 	#define MAX_THREADS 20
 #endif
 
-#define DESIRED_ARGS 8
+#define DESIRED_ARGS 7
 
 
 int main(int argc, char **argv){
@@ -33,12 +33,12 @@ int main(int argc, char **argv){
 	size_t ram;
 	size_t disk;
 	double cpu;
-	const char* inputDir;
+	const char* fifoPath;
 	double localCoresCount;
-	size_t maxThreads;
+	size_t maxClients;
 	#ifndef _DEBUG //O executavel debug nao pede argumentos para ser mais facil o debug entao este codigo nao acontece se for debug mode
 	if (argc != DESIRED_ARGS) {
-		fprintf(stderr, "Usage: %s <servers> <ram> <disk> <cpus> <cores-disponiveis-para-CloudIST> <input dir>  <max-threads>\n", argv[0]);
+		fprintf(stderr, "Usage: %s <servers> <ram> <disk> <cpus> <cores-disponiveis-para-CloudIST> <max-clients> <nome_do_FIFO_de_registo>\n", argv[0]);
 		return 1;
 	}
 	if (parse_size_t_arg(argv[1], &servers) != 0 ||
@@ -46,11 +46,11 @@ int main(int argc, char **argv){
 			parse_size_t_arg(argv[3], &disk) != 0 ||
 			parse_double_arg(argv[4], &cpu) != 0 ||
 			parse_double_arg(argv[5], &localCoresCount) != 0 ||
-			parse_size_t_arg(argv[7], &maxThreads) != 0) {
+			parse_size_t_arg(argv[6], &maxClients) != 0) {
 		fprintf(stderr, "Invalid command line arguments.\n");
 		return 1;
 	}
-	inputDir = argv[6];
+	fifoPath = argv[7];
 	#else//Codigo que acontece em debug mode
 	printf("Project name: %s\n", PROJECT_NAME);
 	printf("Project version: %s\n", PROJECT_VERSION);
@@ -59,9 +59,9 @@ int main(int argc, char **argv){
 		ram = RAM;
 		disk = DISK;
 		cpu = CPU;
-		inputDir = INPUT_DIR;
+		fifoPath = FIFO_PATH;
 		localCoresCount = LOCAL_CORES_AVAILABLES;
-		maxThreads = MAX_THREADS;
+		maxClients = MAX_THREADS;
 	#endif
 
 
@@ -69,11 +69,11 @@ int main(int argc, char **argv){
     .ram = ram,
     .disk = disk,
     .cpu = cpu,
-	.inputDir = inputDir
+	.fifoPath = fifoPath
 	};
 
-	dc.maxThreads = maxThreads;
-	dc.availableThreads = maxThreads;
+	dc.maxThreads = maxClients;
+	dc.availableThreads = maxClients;
 	dc.localCoresCount = localCoresCount;
 	if(datacenter_configure(&dc, servers, &resources) != 0){
 		fprintf(stderr, "Failed to configure Data Center.\n");
