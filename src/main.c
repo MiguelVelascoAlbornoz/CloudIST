@@ -69,18 +69,19 @@ int main(int argc, char **argv){
     .ram = ram,
     .disk = disk,
     .cpu = cpu,
-	.fifoPath = fifoPath
 	};
 
 	dc.maxThreads = maxClients;
 	dc.availableThreads = maxClients;
 	dc.localCoresCount = localCoresCount;
+	dc.fifoPath = fifoPath;
 	if(datacenter_configure(&dc, servers, &resources) != 0){
 		fprintf(stderr, "Failed to configure Data Center.\n");
 		return 1;
 	}
 
-	process_fd(STDIN_FILENO, &dc);
+	waitForConnection();
+	//process_fd(STDIN_FILENO, &dc);
 
 	//Sistema para mostrar que o thread nao esta "morto"
 	struct timespec deadline;

@@ -30,6 +30,18 @@ void datacenter_init(DataCenter *dc) {
 
 }
 
+
+/**
+ * @details
+ * Esta função bloqueia a thread e apenas termina a chamada qua
+ * @param client Cliente que fica inicializado quando a conecção é realizada
+ */
+void waitForConnection(Client* client)
+{
+
+}
+
+
 void datacenter_destroy(DataCenter *dc) {
   pthread_mutex_destroy(&dc->threadCreationMutex);
   pthread_mutex_destroy(&dc->lock);

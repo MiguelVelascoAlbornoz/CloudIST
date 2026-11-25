@@ -12,6 +12,11 @@
 
 void run_commands(int);
 
+
+
+
+
+
 #ifdef _DEBUG
 
 #define CLIENT_ID 0
@@ -19,13 +24,23 @@ void run_commands(int);
 #define RESP_PIPE_PATH "/tmp/CloudIST/client/0/resp" //Recebe as respostas (RONLY)
 #define REGISTER_PIPE_PATH "/tmp/CloudIST/server"
 #endif
+#ifndef _DEBUG
+
 
 int main(int argc, char **argv){
+
+
     if (argc != 5 && argc != 6) {
         fprintf(stderr, "Usage: %s <client_id> <request_pipe_path> <response_pipe_path> <register_pipe_path> [.conf_file]\n", argv[0]);
         return 1;
     }
+#else
 
+
+
+
+int main(){
+#endif
     //stdin by default
     int input_fd = STDIN_FILENO;
     unsigned int client_id = CLIENT_ID;
@@ -59,10 +74,10 @@ int main(int argc, char **argv){
     }
     client_id = (unsigned int) parsed_long;
     #endif
+    Client client = {-1,-1,-1,0};
 
 
-
-    if (cloudIst_connect(req_pipe_path, resp_pipe_path, register_pipe_path, client_id)) {
+    if (cloudIst_connect(req_pipe_path, resp_pipe_path, register_pipe_path, client_id,&client)) {
         return 1;
     }
 

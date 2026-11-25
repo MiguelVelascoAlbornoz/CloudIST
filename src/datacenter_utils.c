@@ -410,6 +410,8 @@ int insertEntryInVectorCallback(const char* entryName, void* context) {
 	return 1;
 }
 
+
+
 int process_command(int fd, DataCenter *dc)
 {
 
@@ -485,14 +487,15 @@ int process_command(int fd, DataCenter *dc)
 
 			case CMD_WAIT:
 
-				unsigned int delay;
+				/*unsigned int delay;
 
 				if(parse_wait(fd, &delay) != 0){
 					fprintf(stderr, "Invalid wait command. See H (help) for usage.\n");
 					break;
 				}
 
-				datacenter_wait(delay);
+				datacenter_wait(delay);*/
+				fprintf(stderr,"Comando apenas client side.");
 				break;
 
 			case CMD_INVALID:

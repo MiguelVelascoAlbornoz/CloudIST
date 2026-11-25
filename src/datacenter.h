@@ -82,6 +82,7 @@ typedef struct DataCenter {
     size_t num_vm_types;
 	double localCoresCount;
 	size_t maxThreads;
+	const char* fifoPath;
 	size_t availableThreads;
 	Reservation* reservations[MAX_RESERVATIONS]; //Tem de ser assim por que depois é uma treta quando existem aquelas realocações chatas
     size_t num_reservations;

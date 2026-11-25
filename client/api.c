@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <time.h>
+#include "ConnectionParser.h"
 
 #include "api.h"
 #include "parser.h"
@@ -42,24 +43,120 @@ void print_vm(char * vm_id, char * vm_type_id, size_t server_id, char vm_state) 
                 convert_vm_state_to_string((VMState) vm_state));
 }
 
-int cloudIst_connect(char const* req_pipe_path, char const* resp_pipe_path, char const* server_pipe_path, unsigned int client_id) {
-    
-    (void) req_pipe_path;
-    (void) resp_pipe_path;
-    (void) server_pipe_path;
-    (void) client_id;
 
-    //TODO: create pipes and connect to the server through the server_pipe_path
-    printf("Connect: Implement me pls\n");
+int createClientFifos(const char* req_pipe_path,const char* resp_pipe_path,Client *client)
+{
+    //Caso o o processo do cliente tenha acabado sem fazer unlink
+    unlink(req_pipe_path);
+    unlink(resp_pipe_path);
 
-    // TODO: These values should be initialized with data received from the server
-    size_t num_servers = 0, ram = 0, disk = 0;
-    double cpus = 0.0;
+    if (mkfifo(req_pipe_path, 0777) <0) //0777 -> leitura, escrita e execução
+    {
+        return 0;
+    }
 
+    if (mkfifo(resp_pipe_path, 0777) < 0)
+    {
+        unlink(req_pipe_path);
+        return 0;
+    }
+    return 1;
+}
+
+/**
+ * GUarda los file descriptors de los pipes con los fifos ya creados anteriormente
+ * @return Se falhar retorna 0
+ */
+int openClientPipes(const char* req_pipe_path,const char* resp_pipe_path,Client *client)
+{
+    //Abre os pipe mas não bloqueia
+    int req_fd = open(req_pipe_path, O_WRONLY);
+    if (req_fd<0)return 0;
+    int resp_fd = open(resp_pipe_path, O_RDONLY);
+    if (resp_fd<0)
+    {
+        close(req_fd);
+        return 0;
+    }
+    client->req_fd = req_fd;
+    client->resp_fd = resp_fd;
+    return 1;
+}
+/**
+ * Garante o close , unlink e os valores devidos ao nao estar conectado no client
+ */
+void unlinkClientFifos(const char* req_pipe_path,const char* resp_pipe_path)
+{
+    unlink(req_pipe_path);
+    unlink(resp_pipe_path);
+}
+void closeClientPipes(Client *client)
+{
+    close(client->req_fd);
+    close(client->resp_fd);
+    client->req_fd = -1;
+    client->resp_fd = -1;
+}
+
+
+int cloudIst_connect(char const* req_pipe_path, char const* resp_pipe_path, char const* server_pipe_path, unsigned int client_id,Client *client) {
+    //Assume-se que o pipe para registar clientes do lado do servidor ja existe.
+    //Tambem que o server tem algum open no registo á espera de alguem se conectar.
+    if (!createClientFifos(req_pipe_path,resp_pipe_path,client)) return 1;
+
+    int server_fd = open(server_pipe_path, O_WRONLY);
+
+    if (server_fd<0) {
+        unlinkClientFifos(req_pipe_path,resp_pipe_path);
+        return 1;
+    }
+    //Apos isto o server acorda e fica bloqueado num read.
+    char request[CONNECT_REQUEST_SIZE];
+    encodeConnectionRequest(request,req_pipe_path,resp_pipe_path,client_id);
+
+    if (write(server_fd,request, sizeof(request)) < 0) {
+        close(server_fd);//O server deve acordar e gerir o erro
+        unlinkClientFifos(req_pipe_path,resp_pipe_path);
+        return 1;
+    }
+
+    close(server_fd); // ja nao serve para nada
+    //Agora o server acorda, vai processar a mensagem e ficar bloqueado num open aos pipes do cliente
+    //Esperamos que tanto o cliente como o server realizem o open
+    if (!openClientPipes(req_pipe_path,resp_pipe_path,client)) //Praticamente assume-se que nao falha nem do lado do server nem do  cliente
+    {
+        unlinkClientFifos(req_pipe_path,resp_pipe_path);
+        return 1;
+    }
+    //Uma vez o server acordar vai criar e mandar a mensagem de resposta
+    //Se o server falhar em enviar a repsosta ira fazer close e bytes == 0
+    //Ficamos a espera ate o server mandar a resposta
+    char response[CONNECT_RESPONSE_SIZE];
+    int bytes = read(client->resp_fd,request, CONNECT_RESPONSE_SIZE);
+    if (bytes != CONNECT_RESPONSE_SIZE)
+    {
+        unlinkClientFifos(req_pipe_path,resp_pipe_path);
+        closeClientPipes(client);
+        return 1;
+    }
+    char result;
+    size_t num_servers, ram, disk;
+    double cpus;
+    decodeConnectionResponse(response,&result, &num_servers, &ram, &disk, &cpus);
+    if (result != 0)
+    {
+        unlinkClientFifos(req_pipe_path,resp_pipe_path);
+        closeClientPipes(client);
+        return 1;
+    }
+    //Aqui o o server ja o server considera o cliente registado e continua a sua vida
+    //Pelo que tambem podemos considerarnos conectados
+    client->connected = 1;
     //Print server's specifications to stdout
     pretty_print_cloud_specs(num_servers, ram, disk, cpus);
     return 0;
 }
+
 
 
 int cloudIst_disconnect(void){

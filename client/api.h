@@ -18,13 +18,25 @@ typedef enum {
 } Opcode;
 
 
+/**
+ * @details
+ *  Esta função sobreescreve os file descriptors de client caso estejam ainda associados a algum ficheiro.
+ *  Bloqueaia o thread ate o server abrir os dois pipes.
+ * @param req_pipe_path path do fifo para mandar request ao server
+ * @param resp_pipe_path path do fifo para recever respostas do server
+ * @return
+ * -> 1 Se occorreu algum problema durante a criação dos fifos
+ * -> 0  Se foram criados os novos fifos
+ */
+int createClientFifos(const char* req_pipe_path,const char* resp_pipe_path,Client *client);
+
 /// Connects to an CloudIst server.
 /// @param req_pipe_path Path to the name pipe to be created for requests.
 /// @param resp_pipe_path Path to the name pipe to be created for responses.
 /// @param server_pipe_path Path to the name pipe where the server is listening.
 /// @param client_id unique number to identify the client in the server.
-/// @return 0 if the connection was established successfully, 1 otherwise.
-int cloudIst_connect(char const* req_pipe_path, char const* resp_pipe_path, char const* server_pipe_path, unsigned int client_id);
+/// @return 1 if the connection was established successfully, 0 otherwise.
+int cloudIst_connect(char const* req_pipe_path, char const* resp_pipe_path, char const* server_pipe_path, unsigned int client_id,Client *client);
 
 /// Disconnects from an CloudIst server.
 /// @return 0 in case of success, 1 otherwise.
