@@ -69,7 +69,6 @@ int createClientFifos(const char* req_pipe_path,const char* resp_pipe_path,Clien
  */
 int openClientPipes(const char* req_pipe_path,const char* resp_pipe_path,Client *client)
 {
-    //Abre os pipe mas não bloqueia
     int req_fd = open(req_pipe_path, O_WRONLY);
     if (req_fd<0)return 0;
     int resp_fd = open(resp_pipe_path, O_RDONLY);
@@ -99,7 +98,7 @@ void closeClientPipes(Client *client)
 }
 
 
-int cloudIst_connect(char const* req_pipe_path, char const* resp_pipe_path, char const* server_pipe_path, unsigned int client_id,Client *client) {
+int cloudIst_connect(char const* req_pipe_path, char const* resp_pipe_path, char const* server_pipe_path,Client *client) {
     //Assume-se que o pipe para registar clientes do lado do servidor ja existe.
     //Tambem que o server tem algum open no registo á espera de alguem se conectar.
     if (!createClientFifos(req_pipe_path,resp_pipe_path,client)) return 1;
@@ -112,10 +111,10 @@ int cloudIst_connect(char const* req_pipe_path, char const* resp_pipe_path, char
     }
     //Apos isto o server acorda e fica bloqueado num read.
     char request[CONNECT_REQUEST_SIZE];
-    encodeConnectionRequest(request,req_pipe_path,resp_pipe_path,client_id);
+    encodeConnectionRequest(request,req_pipe_path,resp_pipe_path,client->id);
 
-    if (write(server_fd,request, sizeof(request)) < 0) {
-        close(server_fd);//O server deve acordar e gerir o erro
+    if (write(server_fd,request, sizeof(request)) != CONNECT_REQUEST_SIZE) {
+        close(server_fd);//O server deve acordar e gerir o erro (read vai devolver 0)
         unlinkClientFifos(req_pipe_path,resp_pipe_path);
         return 1;
     }
@@ -132,7 +131,7 @@ int cloudIst_connect(char const* req_pipe_path, char const* resp_pipe_path, char
     //Se o server falhar em enviar a repsosta ira fazer close e bytes == 0
     //Ficamos a espera ate o server mandar a resposta
     char response[CONNECT_RESPONSE_SIZE];
-    int bytes = read(client->resp_fd,request, CONNECT_RESPONSE_SIZE);
+    int bytes = read(client->resp_fd,response, CONNECT_RESPONSE_SIZE);
     if (bytes != CONNECT_RESPONSE_SIZE)
     {
         unlinkClientFifos(req_pipe_path,resp_pipe_path);

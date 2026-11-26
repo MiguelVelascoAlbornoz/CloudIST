@@ -3,6 +3,8 @@
 #include <unistd.h>
 #include <errno.h>
 #include <linux/limits.h>
+#include <sys/stat.h>
+
 #include "datacenter.h"
 #include "parser.h"
 #include "datacenter.h"
@@ -64,6 +66,12 @@ int main(int argc, char **argv){
 		maxClients = MAX_THREADS;
 	#endif
 
+	//Make fifo
+	unlink(fifoPath);
+	if (mkfifo(fifoPath, 0777)<0)
+	{
+		fprintf(stderr, "Erro na criação do fifo.\n");
+	}
 
 	Resources resources = {
     .ram = ram,
@@ -79,6 +87,8 @@ int main(int argc, char **argv){
 		fprintf(stderr, "Failed to configure Data Center.\n");
 		return 1;
 	}
+
+
 
 	waitForConnection();
 	//process_fd(STDIN_FILENO, &dc);

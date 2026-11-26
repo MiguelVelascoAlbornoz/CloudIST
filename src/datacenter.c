@@ -1,7 +1,7 @@
 #include "datacenter.h"
 #include "datacenter_utils.h"
 #include "utils/vector.h"
-
+#include "../client/ConnectionParser.h"
 
 #include <dirent.h>
 #include <stdio.h>
@@ -11,6 +11,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <stdnoreturn.h>
+#include <unistd.h>
 #include <sys/stat.h>
 
 
@@ -36,9 +37,64 @@ void datacenter_init(DataCenter *dc) {
  * Esta função bloqueia a thread e apenas termina a chamada qua
  * @param client Cliente que fica inicializado quando a conecção é realizada
  */
-void waitForConnection(Client* client)
+void waitForConnection(DataCenter* dc,Resources* res,Client* client)
 {
-
+  while (1)
+  {
+    //Ficar a espera
+    int register_fd = open(dc->fifoPath, O_RDONLY);
+    //falhou tentar outra vez
+    if (register_fd < 0) continue;
+    //Ficar a espera da mensagem
+    //Um server ja fez open e agora vai escrever o request
+    char buffer[CONNECT_REQUEST_SIZE];
+    int bytes = read(register_fd,buffer, sizeof(buffer));
+    //Mensagem invalida, tenta outra vez
+    //Nem vale a pena mandar alguma resposta
+    if (bytes != CONNECT_REQUEST_SIZE || buffer[0] != CONNECT_OP_CODE){
+      close(register_fd);
+      continue;
+    }
+    //Interpretar a resposta
+    char req_pipe_path[FIFO_NAME_MAX_SIZE];
+    char resp_pipe_path[FIFO_NAME_MAX_SIZE];
+    unsigned int client_id;
+    decodeConnectionRequest(buffer+1 /*Tirar o opcode*/,req_pipe_path,resp_pipe_path,&client_id);
+    //Uma vez a mensagem foi interpretada obtemos os files descriptors do cliente
+    //Entanto isto, o cliente fica a espera do server fazer open a ambos fd
+    int req_fd = open(req_pipe_path, O_RDONLY);
+    if (req_fd < 0)
+    {
+      close(register_fd);
+      continue;
+    }
+    int resp_fd = open(resp_pipe_path, O_WRONLY);
+    if (resp_fd < 0)
+    {
+      close(req_fd);
+      close(register_fd);
+      continue;
+    }
+    //Agora o cliente fica a espera do server mandar uma resposta
+    //Agora manda-se a resposta
+    char response[CONNECT_RESPONSE_SIZE];
+    encodeConnectionResponse(response,0,dc->num_servers,res->ram,res->disk,res->cpu);
+    if (write(resp_fd,response,CONNECT_RESPONSE_SIZE) != CONNECT_RESPONSE_SIZE)
+    {
+      close(resp_fd);
+      close(req_fd);
+      close(register_fd);
+      //Se o write falhar o read do cliente devolve 0
+      continue;
+    }
+    close(register_fd);
+    //Podemos liberar ao server
+    client->req_fd = req_fd;
+    client->resp_fd = resp_fd;
+    client->id = client_id;
+    client->connected = 1;
+    break;
+  }
 }
 
 

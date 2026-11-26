@@ -10,6 +10,8 @@
 #include <signal.h>
 #include <errno.h>
 
+#include "ConnectionParser.h"
+
 void run_commands(int);
 
 
@@ -74,10 +76,10 @@ int main(){
     }
     client_id = (unsigned int) parsed_long;
     #endif
-    Client client = {-1,-1,-1,0};
+    Client client = {-1,-1,0,client_id};
 
 
-    if (cloudIst_connect(req_pipe_path, resp_pipe_path, register_pipe_path, client_id,&client)) {
+    if (cloudIst_connect(req_pipe_path, resp_pipe_path, register_pipe_path,&client)) {
         return 1;
     }
 

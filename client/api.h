@@ -36,7 +36,7 @@ int createClientFifos(const char* req_pipe_path,const char* resp_pipe_path,Clien
 /// @param server_pipe_path Path to the name pipe where the server is listening.
 /// @param client_id unique number to identify the client in the server.
 /// @return 1 if the connection was established successfully, 0 otherwise.
-int cloudIst_connect(char const* req_pipe_path, char const* resp_pipe_path, char const* server_pipe_path, unsigned int client_id,Client *client);
+int cloudIst_connect(char const* req_pipe_path, char const* resp_pipe_path, char const* server_pipe_path,Client *client);
 
 /// Disconnects from an CloudIst server.
 /// @return 0 in case of success, 1 otherwise.

@@ -72,25 +72,9 @@ typedef struct Reservation {
     ReservationState state;                         // State of the reservation.
 } Reservation;
 
-/**
- * connected = 1 if connected to server, 0 otherwise
- */
-typedef struct
-{
-    int req_fd;
-    int resp_fd;
-    int connected;
-} Client;
 
-#define CONNECT_OP_CODE 1
-#define CONNECT_REQUEST_SIZE sizeof(char)+FIFO_NAME_MAX_SIZE*2+sizeof(unsigned int)
-#define CONNECT_RESPONSE_SIZE sizeof(char)+sizeof(size_t)*3 + sizeof(double)
-#define DISCONNECT_OP_CODE 2
-#define DEFINE_OP_CODE 3
-#define RESERVE_OP_CODE 4
-#define RUN_OP_CODE 5
-#define LIST_OP_CODE 6
-#define FIFO_NAME_MAX_SIZE 40
+
+
 
 
 #endif // COMMON_H
